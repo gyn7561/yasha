@@ -1,0 +1,45 @@
+.gradle
+*/build/
+!gradle/wrapper/gradle-wrapper.jar
+
+### STS ###
+.apt_generated
+.classpath
+.factorypath
+.project
+.settings
+.springBeans
+.sts4-cache
+
+### IntelliJ IDEA ###
+.idea
+*.iws
+*.iml
+*.ipr
+*/out/
+
+### NetBeans ###
+/nbproject/private/
+/nbbuild/
+/dist/
+/nbdist/
+/.nb-gradle/
+
+### binary ###
+*/bin
+*.log
+
+build.bat
+MyCompilerTool.exe
+bitmap
+bitmaps
+dist
+*.zip
+product
+TASKS
+*.bitmap
+.DS_Store
+/爬虫数据/
+build
+爬虫数据
+__inner__*
