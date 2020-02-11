@@ -10,7 +10,7 @@ abstract class AbstractYashaEventListener : SimpleYashaEventListener() {
 
     override fun onResponse(fetchResult: FetchResult) {
         for (responseEventMethod in onResponseFuncList) {
-            if (responseEventMethod.regex.matches(fetchResult.responseUri.toString())) {
+            if (responseEventMethod.regex.matches(fetchResult.task.uri.toString())) {
                 responseEventMethod.func(fetchResult)
                 return
             }
@@ -41,7 +41,7 @@ abstract class AbstractYashaEventListener : SimpleYashaEventListener() {
 
     override fun onCheckResponse(fetchResult: FetchResult): Boolean {
         for (method in onCheckResponseMethodFuncList) {
-            if (method.regex.matches(fetchResult.responseUri.toString())) {
+            if (method.regex.matches(fetchResult.task.uri.toString())) {
                 return method.func(fetchResult)
             }
         }
@@ -50,7 +50,7 @@ abstract class AbstractYashaEventListener : SimpleYashaEventListener() {
 
     override fun onTaskFinder(fetchResult: FetchResult): List<YashaTask> {
         for (method in onTaskFinderEventMethodFuncList) {
-            if (method.regex.matches(fetchResult.responseUri.toString())) {
+            if (method.regex.matches(fetchResult.task.uri.toString())) {
                 return method.func(fetchResult)
             }
         }
@@ -98,9 +98,9 @@ abstract class AbstractYashaEventListener : SimpleYashaEventListener() {
                     val regexStringArray = method.getAnnotation(OnResponse::class.java).value
                     onResponseFuncList.addAll(regexStringArray.map { regexString ->
                         ResponseEventMethod(
-                            Regex(
-                                regexString
-                            )
+                                Regex(
+                                        regexString
+                                )
                         ) { fetchResult ->
                             method.invoke(this, fetchResult)
                         }
@@ -117,9 +117,9 @@ abstract class AbstractYashaEventListener : SimpleYashaEventListener() {
 
                     onRequestFuncList.addAll(regexStringArray.map { regexString ->
                         RequestEventMethod(
-                            Regex(
-                                regexString
-                            )
+                                Regex(
+                                        regexString
+                                )
                         ) { yashaTask ->
                             method.invoke(this, yashaTask)
                         }
@@ -137,7 +137,7 @@ abstract class AbstractYashaEventListener : SimpleYashaEventListener() {
                     val regexStringArray = method.getAnnotation(OnCreateHttpClient::class.java).value
                     onCreateHttpClientFuncList.addAll(regexStringArray.map { regexString ->
                         CreateHttpClientEventMethod(
-                            Regex(regexString)
+                                Regex(regexString)
                         ) { yashaTask ->
                             method.invoke(this, yashaTask) as OkHttpClient
                         }
@@ -156,9 +156,9 @@ abstract class AbstractYashaEventListener : SimpleYashaEventListener() {
 
                     onCheckResponseMethodFuncList.addAll(regexStringArray.map { regexString ->
                         CheckResponseMethod(
-                            Regex(
-                                regexString
-                            )
+                                Regex(
+                                        regexString
+                                )
                         ) { fetchResult ->
                             method.invoke(this, fetchResult) as Boolean
                         }
@@ -178,7 +178,7 @@ abstract class AbstractYashaEventListener : SimpleYashaEventListener() {
 
                     onTaskFinderEventMethodFuncList.addAll(regexStringArray.map { regexString ->
                         TaskFinderEventMethod(
-                            Regex(regexString)
+                                Regex(regexString)
                         ) { fetchResult ->
                             method.invoke(this, fetchResult) as List<YashaTask>
                         }
@@ -198,9 +198,9 @@ abstract class AbstractYashaEventListener : SimpleYashaEventListener() {
 
                     onErrorEventMethodFuncList.addAll(regexStringArray.map { regexString ->
                         ErrorEventMethod(
-                            Regex(
-                                regexString
-                            )
+                                Regex(
+                                        regexString
+                                )
                         ) { yashaTask, e ->
                             method.invoke(this, yashaTask, e)
                         }

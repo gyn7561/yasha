@@ -6,6 +6,7 @@ import okhttp3.mockwebserver.Dispatcher
 import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
 import okhttp3.mockwebserver.RecordedRequest
+import java.net.InetAddress
 
 
 class ApiServerDispatcher(yasha: Yasha, port: Int, private val name: String = "yasha") : Dispatcher() {
@@ -14,7 +15,7 @@ class ApiServerDispatcher(yasha: Yasha, port: Int, private val name: String = "y
 
     init {
         server.dispatcher = this
-        server.start(port)
+        server.start(InetAddress.getByName("0.0.0.0"), port)
     }
 
     private fun jsonResponse(obj: Any?): MockResponse {

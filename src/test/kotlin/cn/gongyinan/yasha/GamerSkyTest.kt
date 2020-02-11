@@ -52,8 +52,6 @@ object GamerSkyTest {
                     println(result.document.select("h1").text())
                 }
             }
-
-
         }
         val db = SimpleFileTaskDb("爬虫数据/GAMERSKY")
         val yasha = Yasha(
