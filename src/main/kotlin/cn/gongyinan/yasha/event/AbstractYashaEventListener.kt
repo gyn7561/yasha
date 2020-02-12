@@ -1,8 +1,8 @@
 package cn.gongyinan.yasha.event
 
+import cn.gongyinan.yasha.FakeResponse
 import cn.gongyinan.yasha.FetchResult
-import cn.gongyinan.yasha.YashaConfig
-import cn.gongyinan.yasha.YashaTask
+import cn.gongyinan.yasha.task.YashaTask
 import okhttp3.OkHttpClient
 
 
@@ -65,8 +65,18 @@ abstract class AbstractYashaEventListener : SimpleYashaEventListener() {
         }
     }
 
+    override fun onCheckCache(yashaTask: YashaTask): FakeResponse? {
+        for (method in onCheckCacheMethodFuncList) {
+            if (method.regex.matches(yashaTask.uri.toString())) {
+                return method.func(yashaTask)
+            }
+        }
+        return null
+    }
+
     internal data class ResponseEventMethod(val regex: Regex, val func: (FetchResult) -> Unit)
     internal data class RequestEventMethod(val regex: Regex, val func: (YashaTask) -> Unit)
+    internal data class CheckCacheMethod(val regex: Regex, val func: (YashaTask) -> FakeResponse?)
     internal data class CheckResponseMethod(val regex: Regex, val func: (FetchResult) -> Boolean)
     internal data class CreateHttpClientEventMethod(val regex: Regex, val func: (YashaTask) -> OkHttpClient)
     internal data class TaskFinderEventMethod(val regex: Regex, val func: (FetchResult) -> List<YashaTask>)
@@ -76,6 +86,7 @@ abstract class AbstractYashaEventListener : SimpleYashaEventListener() {
     internal val onRequestFuncList = ArrayList<RequestEventMethod>()
     internal val onCreateHttpClientFuncList = ArrayList<CreateHttpClientEventMethod>()
     internal val onCheckResponseMethodFuncList = ArrayList<CheckResponseMethod>()
+    internal val onCheckCacheMethodFuncList = ArrayList<CheckCacheMethod>()
     internal val onTaskFinderEventMethodFuncList = ArrayList<TaskFinderEventMethod>()
     internal val onErrorEventMethodFuncList = ArrayList<ErrorEventMethod>()
 
@@ -87,6 +98,7 @@ abstract class AbstractYashaEventListener : SimpleYashaEventListener() {
         set.addAll(onCheckResponseMethodFuncList.map { f -> f.regex })
         set.addAll(onErrorEventMethodFuncList.map { f -> f.regex })
         set.addAll(onTaskFinderEventMethodFuncList.map { f -> f.regex })
+        set.addAll(onCheckCacheMethodFuncList.map { f -> f.regex })
         return set.filter { regex -> regex.toString() != "[\\w\\W]*" }
     }
 
@@ -189,6 +201,23 @@ abstract class AbstractYashaEventListener : SimpleYashaEventListener() {
                 }
             }
 
+            if (method.isAnnotationPresent(OnCheckCache::class.java)) {
+                if (method.parameters.size == 1 &&
+                        method.parameters[0].type == YashaTask::class.java &&
+                        FakeResponse::class.java == method.returnType) {
+                    val regexStringArray = method.getAnnotation(OnTaskFinder::class.java).value
+
+                    onCheckCacheMethodFuncList.addAll(regexStringArray.map { regexString ->
+                        CheckCacheMethod(
+                                Regex(regexString)
+                        ) { yashaTask ->
+                            method.invoke(this, yashaTask) as FakeResponse?
+                        }
+                    })
+                } else {
+                    throw RuntimeException("OnTaskFinder $method not valid")
+                }
+            }
 
             if (method.isAnnotationPresent(OnError::class.java)) {
                 if (method.parameters.size == 2 &&

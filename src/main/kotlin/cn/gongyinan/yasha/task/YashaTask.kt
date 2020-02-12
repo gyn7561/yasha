@@ -1,6 +1,6 @@
-package cn.gongyinan.yasha
+package cn.gongyinan.yasha.task
 
-import okhttp3.RequestBody
+import cn.gongyinan.yasha.YashaDbModal
 import org.apache.commons.codec.digest.DigestUtils
 import java.net.URI
 
@@ -21,16 +21,16 @@ open class YashaTask(open val uri: URI, open val taskDepth: Int,
 
     fun toDbModal(): YashaDbModal {
         val dbModal = YashaDbModal(
-            taskIdentifier,
-            taskDepth = taskDepth,
-            requestUrl = uri.toString(),
-            taskCommand = taskCommand,
-            requestBody = requestBody,
-            ready = true,
-            requestMethod = method,
-            parentTaskIdentifier = parentTaskIdentifier,
-            extraData = extraData,
-            createTime = createTime
+                taskIdentifier,
+                taskDepth = taskDepth,
+                requestUrl = uri.toString(),
+                taskCommand = taskCommand,
+                requestBody = requestBody,
+                ready = true,
+                requestMethod = method,
+                parentTaskIdentifier = parentTaskIdentifier,
+                extraData = extraData,
+                createTime = createTime
         )
         dbModal.requestHeaders = headers
         return dbModal

@@ -1,6 +1,6 @@
 package cn.gongyinan.yasha
 
-import cn.gongyinan.yasha.db.SimpleFileTaskDb
+import cn.gongyinan.yasha.task.db.SimpleFileTaskDb
 import cn.gongyinan.yasha.event.AbstractYashaEventListener
 import cn.gongyinan.yasha.event.KotlinStyleListener
 import cn.gongyinan.yasha.event.OnResponse
