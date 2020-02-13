@@ -4,8 +4,10 @@ import cn.gongyinan.yasha.task.db.SimpleFileTaskDb
 import cn.gongyinan.yasha.event.AbstractYashaEventListener
 import cn.gongyinan.yasha.event.KotlinStyleListener
 import cn.gongyinan.yasha.event.OnResponse
+import org.apache.commons.io.FileUtils
 
 import org.junit.jupiter.api.Test
+import java.io.File
 
 object GamerSkyTest {
 
@@ -43,15 +45,18 @@ object GamerSkyTest {
     @Test
     fun testKotlinStyle() {
         val listener = KotlinStyleListener() {
+
             onRegex(Regex("https://www.gamersky.com/news/\\d*/\\d*.shtml")) {
                 onRequest { task ->
                     println(task)
                 }
 
                 onResponse { result ->
+                    FileUtils.writeStringToFile(File(result.responseUri.path.split("/").last()), result.bodyString, "utf-8")
                     println(result.document.select("h1").text())
                 }
             }
+
         }
         val db = SimpleFileTaskDb("爬虫数据/GAMERSKY")
         val yasha = Yasha(
@@ -61,7 +66,7 @@ object GamerSkyTest {
                                 Regex("https://www.gamersky.com/"),
                                 Regex("https://www.gamersky.com/news/\\d*/\\d*.shtml")
                         ),
-                        maxDepth = 2,
+                        maxDepth = 10,
                         taskDb = db
                 )
         )
