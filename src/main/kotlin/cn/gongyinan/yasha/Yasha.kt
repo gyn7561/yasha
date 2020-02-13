@@ -1,7 +1,8 @@
 package cn.gongyinan.yasha
 
 import cn.gongyinan.yasha.core.Engine
-import cn.gongyinan.yasha.db.ITaskDb
+import cn.gongyinan.yasha.task.db.ITaskDb
+import cn.gongyinan.yasha.task.YashaTask
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -16,8 +17,8 @@ class Yasha(val yashaConfig: YashaConfig) {
 
     private val engines = (1..yashaConfig.threadNum).map { i ->
         Engine(
-            yashaConfig,
-            "ENGINE$i"
+                yashaConfig,
+                "ENGINE$i"
         )
     }
 
@@ -33,26 +34,25 @@ class Yasha(val yashaConfig: YashaConfig) {
     }
 
     init {
+        taskDb.yasha = this
         yashaConfig.listener.yasha = this
         for (engine in engines) {
             runningMap[engine] = true
         }
     }
 
-    fun pushTask(task: YashaTask, force: Boolean = false): Boolean {
-        if (task.taskDepth > yashaConfig.maxDepth) {
-            return false
-        }
-        return taskDb.addTask(task.toDbModal(), force)
+    fun pushTask(task: YashaTask, force: Boolean = false, pushToStackBottom: Boolean = false): Boolean {
+        return taskDb.pushTask(task, force, pushToStackBottom)
     }
 
     fun pushGetTask(url: String, force: Boolean = false): Boolean {
-        return taskDb.addTask(YashaGetTask(URI(url)).toDbModal(), force)
+        val getTask = this.yashaConfig.listener.onCreateDefaultGetTask(URI(url), 0, null)
+        return taskDb.pushTask(getTask, force)
     }
 
     init {
         for (url in yashaConfig.initUrl) {
-            pushTask(YashaGetTask(URI(url), 0))
+            pushGetTask(url)
         }
     }
 
@@ -80,26 +80,25 @@ class Yasha(val yashaConfig: YashaConfig) {
             for (subTask in result.subTasks) {
                 pushTask(subTask)
             }
-            val dbModal = task.toDbModal()
-            dbModal.ready = false
-            dbModal.success = true
-            dbModal.updateTime = System.currentTimeMillis()
-            dbModal.subTaskCommands = result.subTasks.filter { task -> !taskDb.containsTask(task.taskIdentifier) }
-                .map { yashaTask -> yashaTask.taskCommand }.toTypedArray()
-            dbModal.responseUrl = result.responseUri.toString()
-            dbModal.responseHeaders =
-                result.response.headers.names().map { name -> arrayOf(name, result.response.header(name)!!) }.toList()
-            dbModal.responseCode = result.response.code
-            dbModal.responseBody = result.rawData
-            dbModal.contentType = result.contentType
-            taskDb.updateTask(dbModal)
+            taskDb.updateTask(task) {
+                ready = false
+                success = true
+                updateTime = System.currentTimeMillis()
+                subTaskCommands = result.subTasks.filter { task -> !taskDb.isTaskFinished(task.taskIdentifier) }
+                        .map { yashaTask -> yashaTask.taskCommand }.toTypedArray()
+                responseUrl = result.responseUri.toString()
+                responseHeaders = result.responseHeaders.toList()
+                responseCode = result.responseCode
+                responseBody = result.zippedData ?: result.rawData
+                contentType = result.contentType
+            }
             yashaConfig.listener.onResponse(result)
         }, onFailure = { _, e ->
-            val dbModal = task.toDbModal()
-            dbModal.success = false
-            dbModal.ready = false
-            dbModal.updateTime = System.currentTimeMillis()
-            taskDb.updateTask(dbModal)
+            taskDb.updateTask(task) {
+                success = false
+                ready = false
+                updateTime = System.currentTimeMillis()
+            }
             yashaConfig.listener.onError(task, e)
         }, onFinal = { _ ->
             startNextTask(engine, yashaConfig.intervalInMs)

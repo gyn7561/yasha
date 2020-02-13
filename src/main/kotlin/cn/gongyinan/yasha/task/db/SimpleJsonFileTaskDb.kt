@@ -1,9 +1,9 @@
-package cn.gongyinan.yasha.db
+package cn.gongyinan.yasha.task.db
 
 import cn.gongyinan.yasha.YashaDbModal
-import cn.gongyinan.yasha.YashaTask
-import cn.gongyinan.yasha.utils.SpeedRecorder
-import com.alibaba.fastjson.JSON
+import cn.gongyinan.yasha.task.YashaTask
+import cn.gongyinan.yasha.task.db.converter.DefaultDbDataConverter
+import cn.gongyinan.yasha.task.db.converter.IDbDataConverter
 import com.google.gson.Gson
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.delay
@@ -13,21 +13,12 @@ import org.apache.logging.log4j.LogManager
 import java.io.File
 import java.lang.Exception
 import java.util.*
-import java.util.concurrent.CopyOnWriteArrayList
-import java.util.concurrent.CopyOnWriteArraySet
-import kotlin.collections.ArrayList
-import kotlin.collections.HashMap
-import kotlin.collections.HashSet
 import kotlin.system.exitProcess
 
-class SimpleFileTaskDb(private val filePath: String) : ITaskDb {
+class SimpleJsonFileTaskDb(private val filePath: String, converter: IDbDataConverter = DefaultDbDataConverter()) : AbstractMemoryTaskDb(converter) {
 
-    private val speedRecorder = SpeedRecorder()
-
-    private val logger = LogManager.getLogger(SimpleFileTaskDb::class.java)
+    private val logger = LogManager.getLogger(SimpleJsonFileTaskDb::class.java)
     private val finishedTaskIdSet = Collections.synchronizedSet(HashSet<String>())
-    private val unfinishedTaskMap = Collections.synchronizedMap(HashMap<String, YashaDbModal>())
-    private val taskStack = Stack<YashaDbModal>()
 
     private val finishedTaskIdJsonPath = "$filePath/finishedTaskIdSet.json"
     private val writeSuccessFilePath = "$filePath/write.success"
@@ -41,18 +32,19 @@ class SimpleFileTaskDb(private val filePath: String) : ITaskDb {
 
     init {
 
-        if ((File(finishedTaskIdJsonPath).exists() || File(unfinishedTaskListJsonPath).exists()) && !File(
-                writeSuccessFilePath
-            ).exists()
+        if ((File(finishedTaskIdJsonPath).exists() || File(unfinishedTaskListJsonPath).exists())
+                && !File(writeSuccessFilePath).exists()
         ) {
-            throw RuntimeException("读取文件出错，有文件无锁")
+            throw RuntimeException("上次写入出错，请手工恢复")
         }
+
+        File(writeSuccessFilePath).delete()
 
         if (File(finishedTaskIdJsonPath).exists()) {
             val start = System.currentTimeMillis()
             val array = Gson().fromJson(
-                FileUtils.readFileToString(File(finishedTaskIdJsonPath), "utf-8"),
-                Array<String>::class.java
+                    FileUtils.readFileToString(File(finishedTaskIdJsonPath), "utf-8"),
+                    Array<String>::class.java
             )
             finishedTaskIdSet.addAll(array)
             val end = System.currentTimeMillis()
@@ -61,15 +53,15 @@ class SimpleFileTaskDb(private val filePath: String) : ITaskDb {
         if (File(unfinishedTaskListJsonPath).exists()) {
             val start = System.currentTimeMillis()
             val unfinishedTask = Gson().fromJson<Array<YashaDbModal>>(
-                FileUtils.readFileToString(
-                    File(unfinishedTaskListJsonPath),
-                    "utf-8"
-                ), Array<YashaDbModal>::class.java
+                    FileUtils.readFileToString(
+                            File(unfinishedTaskListJsonPath),
+                            "utf-8"
+                    ), Array<YashaDbModal>::class.java
             )
             for (yashaDbModal in unfinishedTask) {
                 unfinishedTaskMap[yashaDbModal.taskIdentifier] = yashaDbModal
+                taskStack.push(yashaDbModal)
             }
-            taskStack.addAll(unfinishedTask)
             val end = System.currentTimeMillis()
             logger.info("读取未完成任务，未完成${unfinishedTaskMap.size}任务，读取耗时:${end - start}ms")
         }
@@ -81,50 +73,22 @@ class SimpleFileTaskDb(private val filePath: String) : ITaskDb {
         }
     }
 
-    override fun size(): Int {
-        return taskStack.size
+
+    override fun isTaskFinished(taskIdentifier: String): Boolean {
+        return finishedTaskIdSet.contains(taskIdentifier)
     }
 
-    override fun addTask(yashaDBModal: YashaDbModal, force: Boolean): Boolean {
-        if (force || (!finishedTaskIdSet.contains(yashaDBModal.taskIdentifier) && !unfinishedTaskMap.contains(
-                yashaDBModal.taskIdentifier
-            ))
-        ) {
-            taskStack.push(yashaDBModal)
-            unfinishedTaskMap[yashaDBModal.taskIdentifier] = yashaDBModal
-            if (force) {
-                finishedTaskIdSet.remove(yashaDBModal.taskIdentifier)
-            }
-            return true
+    override fun canPush(yashaDbModal: YashaDbModal): Boolean {
+        return !finishedTaskIdSet.contains(yashaDbModal.taskIdentifier) && !unfinishedTaskMap.containsKey(yashaDbModal.taskIdentifier)
+    }
+
+
+    override fun updateTask(yashaTask: YashaTask, beforeUpdateFunc: YashaDbModal.() -> Unit): YashaDbModal {
+        val dbModal = super.updateTask(yashaTask, beforeUpdateFunc)
+        if (dbModal.success) {
+            finishedTaskIdSet.add(dbModal.taskIdentifier)
         }
-        return false
-    }
-
-    override fun updateTask(yashaDBModal: YashaDbModal) {
-        if (yashaDBModal.success) {
-            speedRecorder.add(1)
-            finishedTaskIdSet.add(yashaDBModal.taskIdentifier)
-            unfinishedTaskMap.remove(yashaDBModal.taskIdentifier)
-        }
-    }
-
-    override val lastOneMinSpeed: Double
-        get() = speedRecorder.lastOneMinSpeed()
-
-    override val totalSpeed: Double
-        get() = speedRecorder.speed()
-
-    @Synchronized
-    override fun getNextTask(): YashaTask? {
-        return if (!taskStack.empty()) {
-            taskStack.pop().toYashaTask()
-        } else {
-            null
-        }
-    }
-
-    override fun containsTask(taskIdentifier: String): Boolean {
-        return unfinishedTaskMap.containsKey(taskIdentifier) || finishedTaskIdSet.contains(taskIdentifier)
+        return dbModal
     }
 
     @Synchronized
@@ -169,4 +133,3 @@ class SimpleFileTaskDb(private val filePath: String) : ITaskDb {
         }
     }
 }
-

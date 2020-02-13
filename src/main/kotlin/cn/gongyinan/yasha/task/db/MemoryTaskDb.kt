@@ -1,23 +1,25 @@
-package cn.gongyinan.yasha.db
+package cn.gongyinan.yasha.task.db
 
+import cn.gongyinan.yasha.Yasha
 import cn.gongyinan.yasha.YashaDbModal
-import cn.gongyinan.yasha.YashaTask
+import cn.gongyinan.yasha.task.YashaTask
+import cn.gongyinan.yasha.task.db.converter.DefaultDbDataConverter
 import org.apache.logging.log4j.LogManager
 import java.util.*
 import kotlin.collections.HashMap
 
 class MemoryTaskDb : ITaskDb {
 
+    override lateinit var yasha: Yasha
     private val logger = LogManager.getLogger(MemoryTaskDb::class.java)
 
     private val taskMap = HashMap<String, YashaDbModal>()
     private val taskStack = Stack<YashaDbModal>()
 
-    override fun size(): Int {
-        return taskStack.size
-    }
 
-    override fun addTask(yashaDBModal: YashaDbModal, force: Boolean): Boolean {
+    override fun pushTask(yashaTask: YashaTask, force: Boolean, pushToStackBottom: Boolean, beforePushFunc: (YashaDbModal.() -> Unit)?): Boolean {
+        val yashaDBModal = defaultDbDataConverter.toYashaDbModal(yashaTask)
+        beforePushFunc?.invoke(yashaDBModal)
         if (force) {
             taskMap[yashaDBModal.taskIdentifier] = yashaDBModal
             taskStack.push(yashaDBModal)
@@ -33,9 +35,14 @@ class MemoryTaskDb : ITaskDb {
         return false
     }
 
-    override fun updateTask(yashaDBModal: YashaDbModal) {
+    private val defaultDbDataConverter = DefaultDbDataConverter()
+
+    override fun updateTask(yashaTask: YashaTask, beforeUpdateFunc: YashaDbModal.() -> Unit) :YashaDbModal{
+        val yashaDBModal = defaultDbDataConverter.toYashaDbModal(yashaTask)
+        beforeUpdateFunc(yashaDBModal)
         logger.info("更新任务数据${yashaDBModal.toYashaTask()}")
         taskMap[yashaDBModal.taskIdentifier] = yashaDBModal
+        return yashaDBModal
     }
 
     @Synchronized
@@ -49,7 +56,7 @@ class MemoryTaskDb : ITaskDb {
         return task
     }
 
-    override fun containsTask(taskIdentifier: String): Boolean {
+    override fun isTaskFinished(taskIdentifier: String): Boolean {
         return taskMap.containsKey(taskIdentifier)
     }
 

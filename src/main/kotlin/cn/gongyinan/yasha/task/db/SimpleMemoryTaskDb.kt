@@ -1,13 +1,15 @@
-package cn.gongyinan.yasha.db
+package cn.gongyinan.yasha.task.db
 
+import cn.gongyinan.yasha.Yasha
 import cn.gongyinan.yasha.YashaDbModal
-import cn.gongyinan.yasha.YashaTask
+import cn.gongyinan.yasha.task.YashaTask
+import cn.gongyinan.yasha.task.db.converter.DefaultDbDataConverter
 import org.apache.logging.log4j.LogManager
 import java.util.*
-import kotlin.collections.HashMap
 
 class SimpleMemoryTaskDb : ITaskDb {
 
+    override lateinit var yasha: Yasha
     private val logger = LogManager.getLogger(SimpleMemoryTaskDb::class.java)
 
     private val taskIdSet = HashSet<String>()
@@ -17,7 +19,10 @@ class SimpleMemoryTaskDb : ITaskDb {
         return taskStack.size
     }
 
-    override fun addTask(yashaDBModal: YashaDbModal, force: Boolean): Boolean {
+    override fun pushTask(yashaTask: YashaTask, force: Boolean, pushToStackBottom: Boolean, beforePushFunc: (YashaDbModal.() -> Unit)?): Boolean {
+        val yashaDBModal = defaultDbDataConverter.toYashaDbModal(yashaTask)
+        beforePushFunc?.invoke(yashaDBModal)
+
         if (force) {
             taskIdSet.add(yashaDBModal.taskIdentifier)
             taskStack.push(yashaDBModal)
@@ -33,8 +38,13 @@ class SimpleMemoryTaskDb : ITaskDb {
         return false
     }
 
-    override fun updateTask(yashaDBModal: YashaDbModal) {
+    private val defaultDbDataConverter = DefaultDbDataConverter()
+
+    override fun updateTask(yashaTask: YashaTask, beforeUpdateFunc: YashaDbModal.() -> Unit): YashaDbModal {
+        val yashaDBModal = defaultDbDataConverter.toYashaDbModal(yashaTask)
+        beforeUpdateFunc(yashaDBModal)
         logger.info("更新任务数据${yashaDBModal.toYashaTask()}")
+        return yashaDBModal
     }
 
     @Synchronized
@@ -48,7 +58,7 @@ class SimpleMemoryTaskDb : ITaskDb {
         return task
     }
 
-    override fun containsTask(taskIdentifier: String): Boolean {
+    override fun isTaskFinished(taskIdentifier: String): Boolean {
         return taskIdSet.contains(taskIdentifier)
     }
 

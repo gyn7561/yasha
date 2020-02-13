@@ -1,9 +1,10 @@
-package cn.gongyinan.yasha.db
+package cn.gongyinan.yasha.task.db
 
+import cn.gongyinan.yasha.Yasha
 import cn.gongyinan.yasha.YashaDbModal
-import cn.gongyinan.yasha.YashaTask
+import cn.gongyinan.yasha.task.YashaTask
+import cn.gongyinan.yasha.task.db.converter.DefaultDbDataConverter
 import cn.gongyinan.yasha.utils.SpeedRecorder
-import com.alibaba.fastjson.JSON
 import com.google.common.hash.BloomFilter
 import com.google.common.hash.Funnel
 import com.google.gson.Gson
@@ -16,19 +17,17 @@ import org.apache.logging.log4j.LogManager
 import java.io.ByteArrayOutputStream
 import java.io.File
 import java.io.FileInputStream
-import java.io.FileOutputStream
 import java.lang.Exception
 import java.util.*
-import java.util.concurrent.CopyOnWriteArrayList
-import java.util.concurrent.CopyOnWriteArraySet
 import java.util.concurrent.atomic.AtomicInteger
 import kotlin.collections.ArrayList
 import kotlin.collections.HashMap
-import kotlin.collections.HashSet
 import kotlin.system.exitProcess
-
+@Deprecated("待重写")
 class BloomFilterFileTaskDb(private val filePath: String, val expectedInsertions: Int, val fpp: Double) :
-    ITaskDb {
+        ITaskDb {
+
+    override lateinit var yasha: Yasha
 
     lateinit var bloomFilter: BloomFilter<String>
 
@@ -96,13 +95,21 @@ class BloomFilterFileTaskDb(private val filePath: String, val expectedInsertions
         }
     }
 
+
     override fun size(): Int {
         return taskStack.size
     }
 
-    override fun addTask(yashaDBModal: YashaDbModal, force: Boolean): Boolean {
+    override fun pushTask(yashaTask: YashaTask, force: Boolean, pushToStackBottom: Boolean, beforePushFunc: (YashaDbModal.() -> Unit)?): Boolean {
+        val yashaDBModal = defaultDbDataConverter.toYashaDbModal(yashaTask)
+        beforePushFunc?.invoke(yashaDBModal)
         if (force || (!bloomFilter.mightContain(yashaDBModal.taskIdentifier) && !unfinishedTaskMap.contains(yashaDBModal.taskIdentifier))) {
-            taskStack.push(yashaDBModal)
+            if (pushToStackBottom) {
+                taskStack.add(0, yashaDBModal)
+            } else {
+                taskStack.push(yashaDBModal)
+            }
+
             unfinishedTaskMap[yashaDBModal.taskIdentifier] = yashaDBModal
             if (force && bloomFilter.mightContain(yashaDBModal.taskIdentifier)) {
                 savedFinishedTaskCount.addAndGet(-1)
@@ -112,14 +119,29 @@ class BloomFilterFileTaskDb(private val filePath: String, val expectedInsertions
         return false
     }
 
-    override fun updateTask(yashaDBModal: YashaDbModal) {
+    private val defaultDbDataConverter = DefaultDbDataConverter()
+
+    private val downloadSpeedRecorder = SpeedRecorder()
+    override fun downloadSpeed(): Double {
+        return downloadSpeedRecorder.lastOneMinCount().toDouble() / 60
+    }
+
+    override fun updateTask(yashaTask: YashaTask, beforeUpdateFunc: YashaDbModal.() -> Unit): YashaDbModal {
+
+        val yashaDBModal = defaultDbDataConverter.toYashaDbModal(yashaTask)
+        beforeUpdateFunc(yashaDBModal)
+
         if (yashaDBModal.success) {
             speedRecorder.add(1)
+            downloadSpeedRecorder.add(yashaDBModal.responseBody?.size ?: 0)
             savedFinishedTaskCount.addAndGet(1)
             bloomFilter.put(yashaDBModal.taskIdentifier)
             unfinishedTaskMap.remove(yashaDBModal.taskIdentifier)
         }
+        return yashaDBModal
+
     }
+
 
     override val lastOneMinSpeed: Double
         get() = speedRecorder.lastOneMinSpeed()
@@ -136,7 +158,7 @@ class BloomFilterFileTaskDb(private val filePath: String, val expectedInsertions
         }
     }
 
-    override fun containsTask(taskIdentifier: String): Boolean {
+    override fun isTaskFinished(taskIdentifier: String): Boolean {
         return unfinishedTaskMap.containsKey(taskIdentifier) || bloomFilter.mightContain(taskIdentifier)
     }
 

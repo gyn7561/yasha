@@ -1,6 +1,6 @@
 package cn.gongyinan.yasha
 
-import cn.gongyinan.yasha.db.SimpleFileTaskDb
+import cn.gongyinan.yasha.task.db.SimpleFileTaskDb
 import cn.gongyinan.yasha.event.AbstractYashaEventListener
 import cn.gongyinan.yasha.event.KotlinStyleListener
 import cn.gongyinan.yasha.event.OnResponse
@@ -24,15 +24,15 @@ object GamerSkyTest {
         val listener = Listener()
         val db = SimpleFileTaskDb("爬虫数据/GAMERSKY")
         val yasha = Yasha(
-            YashaConfig(
-                1, 2000, listener, arrayOf("https://www.gamersky.com/"),
-                arrayOf(
-                    Regex("https://www.gamersky.com/"),
-                    Regex("https://www.gamersky.com/news/\\d*/\\d*.shtml")
-                ),
-                taskDb = db,
-                maxDepth = 2
-            )
+                YashaConfig(
+                        1, 2000, listener, arrayOf("https://www.gamersky.com/"),
+                        filterRegexList = arrayOf(
+                                Regex("https://www.gamersky.com/"),
+                                Regex("https://www.gamersky.com/news/\\d*/\\d*.shtml")
+                        ),
+                        taskDb = db,
+                        maxDepth = 2
+                )
         )
         yasha.start()
         db.writeData()
@@ -52,20 +52,18 @@ object GamerSkyTest {
                     println(result.document.select("h1").text())
                 }
             }
-
-
         }
         val db = SimpleFileTaskDb("爬虫数据/GAMERSKY")
         val yasha = Yasha(
-            YashaConfig(
-                1, 2000, listener, arrayOf("https://www.gamersky.com/"),
-                arrayOf(
-                    Regex("https://www.gamersky.com/"),
-                    Regex("https://www.gamersky.com/news/\\d*/\\d*.shtml")
-                ),
-                maxDepth = 2,
-                taskDb = db
-            )
+                YashaConfig(
+                        1, 2000, listener, arrayOf("https://www.gamersky.com/"),
+                        filterRegexList = arrayOf(
+                                Regex("https://www.gamersky.com/"),
+                                Regex("https://www.gamersky.com/news/\\d*/\\d*.shtml")
+                        ),
+                        maxDepth = 2,
+                        taskDb = db
+                )
         )
         yasha.start()
         db.writeData()

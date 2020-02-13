@@ -1,65 +1,60 @@
 package cn.gongyinan.yasha.event
 
+import cn.gongyinan.yasha.FakeResponse
 import cn.gongyinan.yasha.FetchResult
-import cn.gongyinan.yasha.YashaTask
+import cn.gongyinan.yasha.task.YashaTask
 import okhttp3.OkHttpClient
 
 open class KotlinStyleListener(func: (KotlinStyleListener.() -> Unit)?) : AbstractYashaEventListener() {
 
-    class RegexProxy(private val regex: Regex, private val listener: KotlinStyleListener) {
+    class RegexProxy(val regex: Regex, private val listener: KotlinStyleListener) {
 
         fun onResponse(func: RegexProxy.(FetchResult) -> Unit) {
-            listener.onResponseFuncList.add(
-                ResponseEventMethod(
-                    regex
-                ) { fetchResult ->
-                    func.invoke(this, fetchResult)
-                })
+            listener.onResponseFuncList.add(ResponseEventMethod(regex) { fetchResult ->
+                func.invoke(this, fetchResult)
+            })
+        }
+
+        fun onCheckCache(func: RegexProxy.(YashaTask) -> FakeResponse?) {
+            listener.onCheckCacheMethodFuncList.add(CheckCacheMethod(regex) { task ->
+                func(this, task)
+            })
         }
 
         fun onRequest(func: RegexProxy.(YashaTask) -> Unit) {
-            listener.onRequestFuncList.add(
-                RequestEventMethod(
-                    regex
-                ) { task ->
-                    func(this, task)
-                })
+            listener.onRequestFuncList.add(RequestEventMethod(regex) { task ->
+                func(this, task)
+            })
         }
 
         fun onCheckResponse(func: RegexProxy.(FetchResult) -> Boolean) {
-            listener.onCheckResponseMethodFuncList.add(
-                CheckResponseMethod(
-                    regex
-                ) { fetchResult ->
-                    func(this, fetchResult)
-                })
+            listener.onCheckResponseMethodFuncList.add(CheckResponseMethod(regex) { fetchResult ->
+                func(this, fetchResult)
+            })
         }
 
         fun onCreateHttpClient(func: RegexProxy.(YashaTask) -> OkHttpClient) {
-            listener.onCreateHttpClientFuncList.add(
-                CreateHttpClientEventMethod(
-                    regex
-                ) { yashaTask ->
-                    func(this, yashaTask)
-                })
+            listener.onCreateHttpClientFuncList.add(CreateHttpClientEventMethod(regex) { yashaTask ->
+                func(this, yashaTask)
+            })
         }
 
         fun onTaskFinder(func: RegexProxy.(FetchResult) -> List<YashaTask>) {
             listener.onTaskFinderEventMethodFuncList.add(
-                TaskFinderEventMethod(
-                    regex
-                ) { yashaTask ->
-                    func(this, yashaTask)
-                })
+                    TaskFinderEventMethod(
+                            regex
+                    ) { yashaTask ->
+                        func(this, yashaTask)
+                    })
         }
 
         fun onError(func: RegexProxy.(YashaTask, Throwable) -> Unit) {
             listener.onErrorEventMethodFuncList.add(
-                ErrorEventMethod(
-                    regex
-                ) { yashaTask, e ->
-                    func(this, yashaTask, e)
-                })
+                    ErrorEventMethod(
+                            regex
+                    ) { yashaTask, e ->
+                        func(this, yashaTask, e)
+                    })
         }
 
     }
@@ -88,10 +83,18 @@ open class KotlinStyleListener(func: (KotlinStyleListener.() -> Unit)?) : Abstra
         }
     }
 
+    fun onCheckCache(regex: Regex = Regex("[\\w\\W]*"), func: IYashaEventListener.(YashaTask) -> FakeResponse?) {
+        onRegex(regex) {
+            onCheckCache { task ->
+                func(task)
+            }
+        }
+    }
+
     fun onCheckResponse(regex: Regex = Regex("[\\w\\W]*"), func: IYashaEventListener.(FetchResult) -> Boolean) {
         onRegex(regex) {
-            onCheckResponse { task ->
-                func(task)
+            onCheckResponse { arg ->
+                func(arg)
             }
         }
     }

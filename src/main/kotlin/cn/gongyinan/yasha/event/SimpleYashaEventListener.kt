@@ -2,6 +2,7 @@ package cn.gongyinan.yasha.event
 
 import cn.gongyinan.yasha.*
 import cn.gongyinan.yasha.finder.DocumentFinder
+import cn.gongyinan.yasha.task.YashaTask
 import okhttp3.OkHttpClient
 
 open class SimpleYashaEventListener : IYashaEventListener {
@@ -23,18 +24,16 @@ open class SimpleYashaEventListener : IYashaEventListener {
     }
 
     override fun onCheckResponse(fetchResult: FetchResult): Boolean {
-        return fetchResult.response.code in 200..299
+        return fetchResult.responseCode in 200..299
+    }
+
+    override fun onCheckCache(yashaTask: YashaTask): FakeResponse? {
+        return null
     }
 
     override fun onTaskFinder(fetchResult: FetchResult): List<YashaTask> {
         return DocumentFinder.findUrl(fetchResult, yashaConfig.blackListRegexList, yashaConfig.filterRegexList)
-            .map { uri ->
-                YashaGetTask(
-                    uri,
-                    fetchResult.task.taskDepth + 1,
-                    parentTaskIdentifier = fetchResult.task.taskIdentifier
-                )
-            }
+                .map { uri -> this.onCreateDefaultGetTask(uri, fetchResult.task.taskDepth + 1, fetchResult.task.taskIdentifier) }
     }
 
     override fun onError(yashaTask: YashaTask, e: Throwable) {
