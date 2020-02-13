@@ -162,10 +162,10 @@ open class Engine(private val yashaConfig: YashaConfig, private val name: String
                     realOnResponse(FakeResponse(response.request.url.toUri(), response.code, response.headers.toList(), response.body!!.bytes()), response)
                 } catch (e: Throwable) {
                     if (retryCount + 1 <= yashaConfig.retryCount) {
-                        logger.error("$this onResponse 出错 ", e)
+                        logger.error("$this onResponse $task 出错 ", e)
                         fetchPage(task, onSuccess, onFailure, onFinal, retryCount + 1)
                     } else {
-                        logger.error("$this onResponse 出错 ", e)
+                        logger.error("$this onResponse $task 出错 ", e)
                         onFailure(task, e)
                         innerOnFinal(response)
                     }

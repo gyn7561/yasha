@@ -95,7 +95,6 @@ public abstract class AbstractMemoryTaskDb(private val converter: IDbDataConvert
         }
     }
 
-    private val downloadSpeedRecorder = SpeedRecorder()
 
     override fun updateTask(yashaTask: YashaTask, beforeUpdateFunc: YashaDbModal.() -> Unit): YashaDbModal {
         val dbModal = converter.toYashaDbModal(yashaTask)
@@ -114,6 +113,7 @@ public abstract class AbstractMemoryTaskDb(private val converter: IDbDataConvert
         return dbModal
     }
 
+    private val downloadSpeedRecorder = SpeedRecorder()
     override fun downloadSpeed(): Double {
         return downloadSpeedRecorder.lastOneMinCount().toDouble() / 60
     }

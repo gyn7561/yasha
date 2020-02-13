@@ -24,15 +24,15 @@ object GamerSkyTest {
         val listener = Listener()
         val db = SimpleFileTaskDb("爬虫数据/GAMERSKY")
         val yasha = Yasha(
-            YashaConfig(
-                1, 2000, listener, arrayOf("https://www.gamersky.com/"),
-                arrayOf(
-                    Regex("https://www.gamersky.com/"),
-                    Regex("https://www.gamersky.com/news/\\d*/\\d*.shtml")
-                ),
-                taskDb = db,
-                maxDepth = 2
-            )
+                YashaConfig(
+                        1, 2000, listener, arrayOf("https://www.gamersky.com/"),
+                        filterRegexList = arrayOf(
+                                Regex("https://www.gamersky.com/"),
+                                Regex("https://www.gamersky.com/news/\\d*/\\d*.shtml")
+                        ),
+                        taskDb = db,
+                        maxDepth = 2
+                )
         )
         yasha.start()
         db.writeData()
@@ -55,15 +55,15 @@ object GamerSkyTest {
         }
         val db = SimpleFileTaskDb("爬虫数据/GAMERSKY")
         val yasha = Yasha(
-            YashaConfig(
-                1, 2000, listener, arrayOf("https://www.gamersky.com/"),
-                arrayOf(
-                    Regex("https://www.gamersky.com/"),
-                    Regex("https://www.gamersky.com/news/\\d*/\\d*.shtml")
-                ),
-                maxDepth = 2,
-                taskDb = db
-            )
+                YashaConfig(
+                        1, 2000, listener, arrayOf("https://www.gamersky.com/"),
+                        filterRegexList = arrayOf(
+                                Regex("https://www.gamersky.com/"),
+                                Regex("https://www.gamersky.com/news/\\d*/\\d*.shtml")
+                        ),
+                        maxDepth = 2,
+                        taskDb = db
+                )
         )
         yasha.start()
         db.writeData()

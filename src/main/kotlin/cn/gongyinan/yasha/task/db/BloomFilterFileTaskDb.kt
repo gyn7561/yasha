@@ -23,7 +23,7 @@ import java.util.concurrent.atomic.AtomicInteger
 import kotlin.collections.ArrayList
 import kotlin.collections.HashMap
 import kotlin.system.exitProcess
-
+@Deprecated("待重写")
 class BloomFilterFileTaskDb(private val filePath: String, val expectedInsertions: Int, val fpp: Double) :
         ITaskDb {
 
@@ -121,6 +121,11 @@ class BloomFilterFileTaskDb(private val filePath: String, val expectedInsertions
 
     private val defaultDbDataConverter = DefaultDbDataConverter()
 
+    private val downloadSpeedRecorder = SpeedRecorder()
+    override fun downloadSpeed(): Double {
+        return downloadSpeedRecorder.lastOneMinCount().toDouble() / 60
+    }
+
     override fun updateTask(yashaTask: YashaTask, beforeUpdateFunc: YashaDbModal.() -> Unit): YashaDbModal {
 
         val yashaDBModal = defaultDbDataConverter.toYashaDbModal(yashaTask)
@@ -128,6 +133,7 @@ class BloomFilterFileTaskDb(private val filePath: String, val expectedInsertions
 
         if (yashaDBModal.success) {
             speedRecorder.add(1)
+            downloadSpeedRecorder.add(yashaDBModal.responseBody?.size ?: 0)
             savedFinishedTaskCount.addAndGet(1)
             bloomFilter.put(yashaDBModal.taskIdentifier)
             unfinishedTaskMap.remove(yashaDBModal.taskIdentifier)

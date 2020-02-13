@@ -3,11 +3,14 @@ package cn.gongyinan.yasha.utils
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import okhttp3.Interceptor
+import okhttp3.Response
 import java.text.DecimalFormat
 import java.util.concurrent.atomic.AtomicInteger
 
 
 class SpeedRecorder {
+
 
     private var recordHs = HashMap<Long, Int>()
 

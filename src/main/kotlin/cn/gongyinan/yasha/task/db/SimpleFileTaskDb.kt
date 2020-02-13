@@ -19,6 +19,7 @@ import kotlin.collections.HashMap
 import kotlin.collections.HashSet
 import kotlin.system.exitProcess
 
+@Deprecated("SimpleJsonFileTaskDb重写")
 class SimpleFileTaskDb(private val filePath: String) : ITaskDb {
 
     override lateinit var yasha: Yasha
@@ -113,11 +114,17 @@ class SimpleFileTaskDb(private val filePath: String) : ITaskDb {
 
     private val defaultDbDataConverter = DefaultDbDataConverter()
 
+    private val downloadSpeedRecorder = SpeedRecorder()
+    override fun downloadSpeed(): Double {
+        return downloadSpeedRecorder.lastOneMinCount().toDouble() / 60
+    }
+
     override fun updateTask(yashaTask: YashaTask, beforeUpdateFunc: YashaDbModal.() -> Unit): YashaDbModal {
         val yashaDBModal = defaultDbDataConverter.toYashaDbModal(yashaTask)
         beforeUpdateFunc(yashaDBModal)
         if (yashaDBModal.success) {
             speedRecorder.add(1)
+            downloadSpeedRecorder.add(yashaDBModal.requestBody?.size ?: 0)
             finishedTaskIdSet.add(yashaDBModal.taskIdentifier)
             unfinishedTaskMap.remove(yashaDBModal.taskIdentifier)
         }
