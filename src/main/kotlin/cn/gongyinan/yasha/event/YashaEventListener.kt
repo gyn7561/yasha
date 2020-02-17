@@ -11,8 +11,11 @@ import cn.gongyinan.yasha.task.filter.TaskFilter
 import okhttp3.OkHttpClient
 
 
-class YashaEventListener : IYashaEventListener {
+class YashaEventListener(func: (YashaEventListener.() -> Unit)?) : IYashaEventListener {
 
+    init {
+        func?.invoke(this)
+    }
 
     class FilterProxy(val filter: ITaskFilter, private val listener: YashaEventListener) {
 
