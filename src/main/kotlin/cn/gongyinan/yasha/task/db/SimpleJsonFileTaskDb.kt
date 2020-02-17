@@ -32,8 +32,10 @@ class SimpleJsonFileTaskDb(private val filePath: String, converter: IDbDataConve
 
     init {
 
-        if ((File(finishedTaskIdJsonPath).exists() || File(unfinishedTaskListJsonPath).exists())
-                && !File(writeSuccessFilePath).exists()
+        if ((File(finishedTaskIdJsonPath).exists() || File(unfinishedTaskListJsonPath).exists() ||
+                        File("$finishedTaskIdJsonPath.bk").exists() || File("$unfinishedTaskListJsonPath.bk").exists()) && !File(
+                        writeSuccessFilePath
+                ).exists()
         ) {
             throw RuntimeException("上次写入出错，请手工恢复")
         }

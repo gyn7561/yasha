@@ -80,6 +80,7 @@ class Yasha(val yashaConfig: YashaConfig) {
             for (subTask in result.subTasks) {
                 pushTask(subTask)
             }
+            yashaConfig.listener.onResponse(result)
             taskDb.updateTask(task) {
                 ready = false
                 success = true
@@ -92,7 +93,6 @@ class Yasha(val yashaConfig: YashaConfig) {
                 responseBody = result.zippedData ?: result.rawData
                 contentType = result.contentType
             }
-            yashaConfig.listener.onResponse(result)
         }, onFailure = { _, e ->
             taskDb.updateTask(task) {
                 success = false

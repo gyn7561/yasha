@@ -9,51 +9,51 @@ open class KotlinStyleListener(func: (KotlinStyleListener.() -> Unit)?) : Abstra
 
     class RegexProxy(val regex: Regex, private val listener: KotlinStyleListener) {
 
-        fun onResponse(func: RegexProxy.(FetchResult) -> Unit) {
+        fun onResponse(func: FetchResult.(FetchResult) -> Unit) {
             listener.onResponseFuncList.add(ResponseEventMethod(regex) { fetchResult ->
-                func.invoke(this, fetchResult)
+                func.invoke(fetchResult, fetchResult)
             })
         }
 
-        fun onCheckCache(func: RegexProxy.(YashaTask) -> FakeResponse?) {
+        fun onCheckCache(func: YashaTask.(YashaTask) -> FakeResponse?) {
             listener.onCheckCacheMethodFuncList.add(CheckCacheMethod(regex) { task ->
-                func(this, task)
+                func(task, task)
             })
         }
 
-        fun onRequest(func: RegexProxy.(YashaTask) -> Unit) {
+        fun onRequest(func: YashaTask.(YashaTask) -> Unit) {
             listener.onRequestFuncList.add(RequestEventMethod(regex) { task ->
-                func(this, task)
+                func(task, task)
             })
         }
 
-        fun onCheckResponse(func: RegexProxy.(FetchResult) -> Boolean) {
+        fun onCheckResponse(func: FetchResult.(FetchResult) -> Boolean) {
             listener.onCheckResponseMethodFuncList.add(CheckResponseMethod(regex) { fetchResult ->
-                func(this, fetchResult)
+                func(fetchResult, fetchResult)
             })
         }
 
-        fun onCreateHttpClient(func: RegexProxy.(YashaTask) -> OkHttpClient) {
+        fun onCreateHttpClient(func: YashaTask.(YashaTask) -> OkHttpClient) {
             listener.onCreateHttpClientFuncList.add(CreateHttpClientEventMethod(regex) { yashaTask ->
-                func(this, yashaTask)
+                func(yashaTask, yashaTask)
             })
         }
 
-        fun onTaskFinder(func: RegexProxy.(FetchResult) -> List<YashaTask>) {
+        fun onTaskFinder(func: FetchResult.(FetchResult) -> List<YashaTask>) {
             listener.onTaskFinderEventMethodFuncList.add(
                     TaskFinderEventMethod(
                             regex
                     ) { yashaTask ->
-                        func(this, yashaTask)
+                        func(yashaTask, yashaTask)
                     })
         }
 
-        fun onError(func: RegexProxy.(YashaTask, Throwable) -> Unit) {
+        fun onError(func: YashaTask.(YashaTask, Throwable) -> Unit) {
             listener.onErrorEventMethodFuncList.add(
                     ErrorEventMethod(
                             regex
                     ) { yashaTask, e ->
-                        func(this, yashaTask, e)
+                        func(yashaTask, yashaTask, e)
                     })
         }
 

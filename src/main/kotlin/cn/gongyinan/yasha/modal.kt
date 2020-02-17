@@ -1,6 +1,8 @@
 package cn.gongyinan.yasha
 
 import cn.gongyinan.yasha.task.YashaTask
+import cn.gongyinan.yasha.utils.parseFormData
+import cn.gongyinan.yasha.utils.parseQuery
 import com.alibaba.fastjson.JSON
 import com.alibaba.fastjson.JSONArray
 import com.alibaba.fastjson.JSONObject
@@ -31,6 +33,20 @@ class FetchResult(val task: YashaTask, val responseHeaders: List<Pair<String, St
     val jsonArray: JSONArray by lazy {
         JSON.parseArray(bodyString)
     }
+
+    val requestUriQueryParams: HashMap<String, String> by lazy {
+        this.task.uri.parseQuery()
+    }
+
+    val responseUriQueryParams: HashMap<String, String> by lazy {
+        this.responseUri.parseQuery()
+    }
+
+    val requestFormDataParams: HashMap<String, String> by lazy {
+        String(this.task.requestBody!!).parseFormData()
+    }
+
+
 }
 
 class FakeResponse(val uri: URI, val code: Int, val headers: List<Pair<String, String>>, val body: ByteArray) {
