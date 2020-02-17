@@ -1,7 +1,7 @@
 package cn.gongyinan.yasha.task.db.converter
 
-import cn.gongyinan.yasha.YashaDbModal
 import cn.gongyinan.yasha.task.YashaTask
+import cn.gongyinan.yasha.task.db.modals.YashaDbModal
 
 interface IDbDataConverter {
 

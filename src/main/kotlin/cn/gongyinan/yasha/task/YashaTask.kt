@@ -1,6 +1,5 @@
 package cn.gongyinan.yasha.task
 
-import cn.gongyinan.yasha.YashaDbModal
 import org.apache.commons.codec.digest.DigestUtils
 import java.net.URI
 
@@ -18,24 +17,9 @@ open class YashaTask(open val uri: URI, open val taskDepth: Int,
         stringBuilder.append("[$method] [depth:$taskDepth] $taskIdentifier $taskCommand")
         return stringBuilder.toString()
     }
-
-    fun toDbModal(): YashaDbModal {
-        val dbModal = YashaDbModal(
-                taskIdentifier,
-                taskDepth = taskDepth,
-                requestUrl = uri.toString(),
-                taskCommand = taskCommand,
-                requestBody = requestBody,
-                ready = true,
-                requestMethod = method,
-                parentTaskIdentifier = parentTaskIdentifier,
-                extraData = extraData,
-                createTime = createTime
-        )
-        dbModal.requestHeaders = headers
-        return dbModal
-    }
 }
+
+internal class TempTaskFilterTask(uri: URI) : YashaTask(uri, 0, null, "GET", null, null, null, "", "")
 
 open class YashaGetTask(override val uri: URI, override val taskDepth: Int = 0, override var headers: Map<String, String>? = null,
                         override val taskIdentifier: String = DigestUtils.md5Hex(uri.toString()),

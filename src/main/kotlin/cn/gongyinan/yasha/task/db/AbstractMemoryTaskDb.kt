@@ -1,9 +1,9 @@
 package cn.gongyinan.yasha.task.db
 
 import cn.gongyinan.yasha.Yasha
-import cn.gongyinan.yasha.YashaDbModal
 import cn.gongyinan.yasha.task.YashaTask
 import cn.gongyinan.yasha.task.db.converter.IDbDataConverter
+import cn.gongyinan.yasha.task.db.modals.YashaDbModal
 import cn.gongyinan.yasha.utils.SpeedRecorder
 import org.apache.logging.log4j.LogManager
 import java.util.*
@@ -44,7 +44,7 @@ abstract class AbstractMemoryTaskDb(private val converter: IDbDataConverter) : I
         }
     }
 
-    override fun pushTask(yashaTask: YashaTask, force: Boolean, pushToStackBottom: Boolean, beforePushFunc: (YashaDbModal.() -> Unit)?): Boolean {
+    override fun pushTask(yashaTask: YashaTask, force: Boolean, pushToStackBottom: Boolean, beforePushFunc: (YashaDbModal.() -> Unit)?): ITaskDb.PushTaskResult {
         val dbModal = converter.toYashaDbModal(yashaTask)
         beforePushFunc?.invoke(dbModal)
         if (force || canPush(dbModal)) {
@@ -54,9 +54,9 @@ abstract class AbstractMemoryTaskDb(private val converter: IDbDataConverter) : I
                 taskStack.add(0, dbModal)
             }
             unfinishedTaskMap[dbModal.taskIdentifier] = dbModal
-            return true
+            return ITaskDb.PushTaskResult(dbModal, true)
         }
-        return false
+        return ITaskDb.PushTaskResult(dbModal, false)
     }
 
     override fun finishedTaggedTaskSpeedMap(): Map<String, Double> {

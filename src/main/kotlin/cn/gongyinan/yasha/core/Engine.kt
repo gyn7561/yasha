@@ -1,9 +1,9 @@
 package cn.gongyinan.yasha.core
 
-import cn.gongyinan.yasha.FakeResponse
-import cn.gongyinan.yasha.FetchResult
-import cn.gongyinan.yasha.ResponseType
 import cn.gongyinan.yasha.YashaConfig
+import cn.gongyinan.yasha.modals.FakeResponse
+import cn.gongyinan.yasha.modals.FetchResult
+import cn.gongyinan.yasha.modals.ResponseType
 import cn.gongyinan.yasha.task.YashaTask
 import cn.gongyinan.yasha.utils.BrUtil
 import cn.gongyinan.yasha.utils.EncodingDetect
@@ -159,7 +159,7 @@ open class Engine(private val yashaConfig: YashaConfig, private val name: String
 
             override fun onResponse(call: Call, response: Response) {
                 try {
-                    realOnResponse(FakeResponse(response.request.url.toUri(), response.code, response.headers.toList(), response.body!!.bytes()), response)
+                    realOnResponse(FakeResponse(response.request.url.toUri(), response.code, response.headers.toList(), response.body!!.bytes(), response.message), response)
                 } catch (e: Throwable) {
                     if (retryCount + 1 <= yashaConfig.retryCount) {
                         logger.error("$this onResponse $task 出错 ", e)

@@ -1,9 +1,9 @@
 package cn.gongyinan.yasha.task.db
 
-import cn.gongyinan.yasha.YashaDbModal
 import cn.gongyinan.yasha.task.YashaTask
 import cn.gongyinan.yasha.task.db.converter.DefaultDbDataConverter
 import cn.gongyinan.yasha.task.db.converter.IDbDataConverter
+import cn.gongyinan.yasha.task.db.modals.YashaDbModal
 import com.google.gson.Gson
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.delay

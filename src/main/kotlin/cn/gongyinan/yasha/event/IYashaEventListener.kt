@@ -1,6 +1,8 @@
 package cn.gongyinan.yasha.event
 
 import cn.gongyinan.yasha.*
+import cn.gongyinan.yasha.modals.FakeResponse
+import cn.gongyinan.yasha.modals.FetchResult
 import cn.gongyinan.yasha.task.YashaGetTask
 import cn.gongyinan.yasha.task.YashaTask
 import okhttp3.OkHttpClient

@@ -1,9 +1,9 @@
 package cn.gongyinan.yasha.task.db
 
 import cn.gongyinan.yasha.Yasha
-import cn.gongyinan.yasha.YashaDbModal
 import cn.gongyinan.yasha.task.YashaTask
 import cn.gongyinan.yasha.task.db.converter.DefaultDbDataConverter
+import cn.gongyinan.yasha.task.db.modals.YashaDbModal
 import cn.gongyinan.yasha.utils.SpeedRecorder
 import com.google.common.hash.BloomFilter
 import com.google.common.hash.Funnel
@@ -100,7 +100,7 @@ class BloomFilterFileTaskDb(private val filePath: String, val expectedInsertions
         return taskStack.size
     }
 
-    override fun pushTask(yashaTask: YashaTask, force: Boolean, pushToStackBottom: Boolean, beforePushFunc: (YashaDbModal.() -> Unit)?): Boolean {
+    override fun pushTask(yashaTask: YashaTask, force: Boolean, pushToStackBottom: Boolean, beforePushFunc: (YashaDbModal.() -> Unit)?): ITaskDb.PushTaskResult {
         val yashaDBModal = defaultDbDataConverter.toYashaDbModal(yashaTask)
         beforePushFunc?.invoke(yashaDBModal)
         if (force || (!bloomFilter.mightContain(yashaDBModal.taskIdentifier) && !unfinishedTaskMap.contains(yashaDBModal.taskIdentifier))) {
@@ -114,9 +114,9 @@ class BloomFilterFileTaskDb(private val filePath: String, val expectedInsertions
             if (force && bloomFilter.mightContain(yashaDBModal.taskIdentifier)) {
                 savedFinishedTaskCount.addAndGet(-1)
             }
-            return true
+            return ITaskDb.PushTaskResult(yashaDBModal,true)
         }
-        return false
+        return ITaskDb.PushTaskResult(yashaDBModal,false)
     }
 
     private val defaultDbDataConverter = DefaultDbDataConverter()

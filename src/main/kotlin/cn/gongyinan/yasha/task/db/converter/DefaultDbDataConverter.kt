@@ -1,7 +1,7 @@
 package cn.gongyinan.yasha.task.db.converter
 
-import cn.gongyinan.yasha.YashaDbModal
 import cn.gongyinan.yasha.task.YashaTask
+import cn.gongyinan.yasha.task.db.modals.YashaDbModal
 import java.net.URI
 
 class DefaultDbDataConverter : IDbDataConverter {
@@ -17,7 +17,8 @@ class DefaultDbDataConverter : IDbDataConverter {
                 requestMethod = yashaTask.method,
                 parentTaskIdentifier = yashaTask.parentTaskIdentifier,
                 extraData = yashaTask.extraData,
-                createTime = yashaTask.createTime
+                createTime = yashaTask.createTime,
+                taskClass = yashaTask.javaClass.name
         )
         dbModal.requestHeaders = yashaTask.headers
         return dbModal

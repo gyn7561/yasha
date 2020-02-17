@@ -1,10 +1,10 @@
 package cn.gongyinan.yasha.event
 
-import cn.gongyinan.yasha.FakeResponse
-import cn.gongyinan.yasha.FetchResult
 import cn.gongyinan.yasha.Yasha
 import cn.gongyinan.yasha.YashaConfig
 import cn.gongyinan.yasha.finder.DocumentFinder
+import cn.gongyinan.yasha.modals.FakeResponse
+import cn.gongyinan.yasha.modals.FetchResult
 import cn.gongyinan.yasha.task.YashaTask
 import cn.gongyinan.yasha.task.filter.ITaskFilter
 import cn.gongyinan.yasha.task.filter.TaskFilter
@@ -18,7 +18,7 @@ class YashaEventListener(func: (YashaEventListener.() -> Unit)?) : IYashaEventLi
 
     }
 
-    class FilterProxy(val filter: ITaskFilter, private val listener: YashaEventListener) {
+    class FilterContext(val filter: ITaskFilter, private val listener: YashaEventListener) {
 
         fun onResponse(func: FetchResult.(FetchResult) -> Unit) {
             listener.onResponseFuncList.add(ResponseEventMethod(filter) { fetchResult ->
@@ -64,26 +64,26 @@ class YashaEventListener(func: (YashaEventListener.() -> Unit)?) : IYashaEventLi
 
     }
 
-    fun on(filter: ITaskFilter, func: FilterProxy.() -> Unit) {
-        func(FilterProxy(filter, this))
+    fun on(filter: ITaskFilter, func: FilterContext.() -> Unit) {
+        func(FilterContext(filter, this))
     }
 
     /**
      * 如果要用 一定要写最后面
      */
-    fun onRest(filter: ITaskFilter, func: FilterProxy.() -> Unit) {
+    fun onRest(filter: ITaskFilter, func: FilterContext.() -> Unit) {
         on(TaskFilter { true }, func)
     }
 
-    fun onUrlStartsWith(prefix: String, func: FilterProxy.() -> Unit) {
+    fun onUrlStartsWith(prefix: String, func: FilterContext.() -> Unit) {
         on(TaskFilter { uri.toString().startsWith(prefix) }, func)
     }
 
-    fun onUrlEndsWith(prefix: String, func: FilterProxy.() -> Unit) {
+    fun onUrlEndsWith(prefix: String, func: FilterContext.() -> Unit) {
         on(TaskFilter { uri.toString().endsWith(prefix) }, func)
     }
 
-    fun on(filterFuc: YashaTask.() -> Boolean, func: FilterProxy.() -> Unit) {
+    fun on(filterFuc: YashaTask.() -> Boolean, func: FilterContext.() -> Unit) {
         on(TaskFilter(filterFuc), func)
     }
 
@@ -159,7 +159,7 @@ class YashaEventListener(func: (YashaEventListener.() -> Unit)?) : IYashaEventLi
                 return method.func(fetchResult)
             }
         }
-        return DocumentFinder.findUrl(fetchResult, yashaConfig.blackListRegexList, yashaConfig.filterRegexList)
+        return DocumentFinder.findUrl(fetchResult, yashaConfig.taskFilterList, yashaConfig.taskFilterBlackList)
                 .map { uri -> this.onCreateDefaultGetTask(uri, fetchResult.task.taskDepth + 1, fetchResult.task.taskIdentifier) }
     }
 

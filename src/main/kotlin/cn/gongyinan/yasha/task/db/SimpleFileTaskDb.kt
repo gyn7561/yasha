@@ -1,9 +1,9 @@
 package cn.gongyinan.yasha.task.db
 
 import cn.gongyinan.yasha.Yasha
-import cn.gongyinan.yasha.YashaDbModal
 import cn.gongyinan.yasha.task.YashaTask
 import cn.gongyinan.yasha.task.db.converter.DefaultDbDataConverter
+import cn.gongyinan.yasha.task.db.modals.YashaDbModal
 import cn.gongyinan.yasha.utils.SpeedRecorder
 import com.google.gson.Gson
 import kotlinx.coroutines.GlobalScope
@@ -90,7 +90,7 @@ class SimpleFileTaskDb(private val filePath: String) : ITaskDb {
     }
 
 
-    override fun pushTask(yashaTask: YashaTask, force: Boolean, pushToStackBottom: Boolean, beforePushFunc: (YashaDbModal.() -> Unit)?): Boolean {
+    override fun pushTask(yashaTask: YashaTask, force: Boolean, pushToStackBottom: Boolean, beforePushFunc: (YashaDbModal.() -> Unit)?): ITaskDb.PushTaskResult {
         val yashaDBModal = defaultDbDataConverter.toYashaDbModal(yashaTask)
         beforePushFunc?.invoke(yashaDBModal)
 
@@ -108,9 +108,9 @@ class SimpleFileTaskDb(private val filePath: String) : ITaskDb {
             if (force) {
                 finishedTaskIdSet.remove(yashaDBModal.taskIdentifier)
             }
-            return true
+            return ITaskDb.PushTaskResult(yashaDBModal,true)
         }
-        return false
+        return ITaskDb.PushTaskResult(yashaDBModal,false)
     }
 
     private val defaultDbDataConverter = DefaultDbDataConverter()

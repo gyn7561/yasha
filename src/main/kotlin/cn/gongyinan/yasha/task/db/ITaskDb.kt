@@ -1,8 +1,8 @@
 package cn.gongyinan.yasha.task.db
 
 import cn.gongyinan.yasha.Yasha
-import cn.gongyinan.yasha.YashaDbModal
 import cn.gongyinan.yasha.task.YashaTask
+import cn.gongyinan.yasha.task.db.modals.YashaDbModal
 import java.util.concurrent.atomic.AtomicInteger
 
 interface ITaskDb {
@@ -13,7 +13,9 @@ interface ITaskDb {
         return -1
     }
 
-    fun pushTask(yashaTask: YashaTask, force: Boolean = false, pushToStackBottom: Boolean = false, beforePushFunc: (YashaDbModal.() -> Unit)? = null): Boolean
+    data class PushTaskResult(val yashaDbModal: YashaDbModal, val success: Boolean)
+
+    fun pushTask(yashaTask: YashaTask, force: Boolean = false, pushToStackBottom: Boolean = false, beforePushFunc: (YashaDbModal.() -> Unit)? = null): PushTaskResult
 
     fun updateTask(yashaTask: YashaTask, beforeUpdateFunc: YashaDbModal.() -> Unit): YashaDbModal
     fun getNextTask(): YashaTask?

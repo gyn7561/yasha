@@ -4,6 +4,7 @@ import cn.gongyinan.yasha.task.db.ITaskDb
 import cn.gongyinan.yasha.task.db.SimpleMemoryTaskDb
 import cn.gongyinan.yasha.event.IYashaEventListener
 import cn.gongyinan.yasha.task.classifier.ITaskClassifier
+import cn.gongyinan.yasha.task.filter.ITaskFilter
 
 
 class YashaConfig(
@@ -12,8 +13,10 @@ class YashaConfig(
         val listener: IYashaEventListener,
         val initUrl: Array<String> = arrayOf(),
         val taskClassifierList: Array<ITaskClassifier> = arrayOf(),
-        val filterRegexList: Array<Regex> = arrayOf(),
-        val blackListRegexList: Array<Regex> = arrayOf(),
+//        val filterRegexList: Array<Regex> = arrayOf(),
+//        val blackListRegexList: Array<Regex> = arrayOf(),
+        val taskFilterList: Array<ITaskFilter> = arrayOf(),
+        val taskFilterBlackList: Array<ITaskFilter> = arrayOf(),
         val maxDepth: Int = 1000,
         val retryCount: Int = 5,
         val taskDb: ITaskDb = SimpleMemoryTaskDb(),

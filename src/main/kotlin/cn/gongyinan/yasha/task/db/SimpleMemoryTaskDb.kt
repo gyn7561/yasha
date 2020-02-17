@@ -1,9 +1,9 @@
 package cn.gongyinan.yasha.task.db
 
 import cn.gongyinan.yasha.Yasha
-import cn.gongyinan.yasha.YashaDbModal
 import cn.gongyinan.yasha.task.YashaTask
 import cn.gongyinan.yasha.task.db.converter.DefaultDbDataConverter
+import cn.gongyinan.yasha.task.db.modals.YashaDbModal
 import org.apache.logging.log4j.LogManager
 import java.util.*
 
@@ -19,7 +19,7 @@ class SimpleMemoryTaskDb : ITaskDb {
         return taskStack.size
     }
 
-    override fun pushTask(yashaTask: YashaTask, force: Boolean, pushToStackBottom: Boolean, beforePushFunc: (YashaDbModal.() -> Unit)?): Boolean {
+    override fun pushTask(yashaTask: YashaTask, force: Boolean, pushToStackBottom: Boolean, beforePushFunc: (YashaDbModal.() -> Unit)?): ITaskDb.PushTaskResult {
         val yashaDBModal = defaultDbDataConverter.toYashaDbModal(yashaTask)
         beforePushFunc?.invoke(yashaDBModal)
 
@@ -27,15 +27,15 @@ class SimpleMemoryTaskDb : ITaskDb {
             taskIdSet.add(yashaDBModal.taskIdentifier)
             taskStack.push(yashaDBModal)
             logger.info("添加任务成功${yashaDBModal.toYashaTask()}")
-            return true
+            return ITaskDb.PushTaskResult(yashaDBModal,true)
         }
         if (!taskIdSet.contains(yashaDBModal.taskIdentifier)) {
             taskIdSet.add(yashaDBModal.taskIdentifier)
             taskStack.push(yashaDBModal)
             logger.info("添加任务成功${yashaDBModal.toYashaTask()}")
-            return true
+            return ITaskDb.PushTaskResult(yashaDBModal,true)
         }
-        return false
+        return ITaskDb.PushTaskResult(yashaDBModal,false)
     }
 
     private val defaultDbDataConverter = DefaultDbDataConverter()

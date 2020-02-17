@@ -2,9 +2,11 @@ package cn.gongyinan.yasha.event
 
 import cn.gongyinan.yasha.*
 import cn.gongyinan.yasha.finder.DocumentFinder
+import cn.gongyinan.yasha.modals.FakeResponse
+import cn.gongyinan.yasha.modals.FetchResult
 import cn.gongyinan.yasha.task.YashaTask
 import okhttp3.OkHttpClient
-
+@Deprecated("弃用")
 open class SimpleYashaEventListener : IYashaEventListener {
 
     override lateinit var yashaConfig: YashaConfig
@@ -32,7 +34,7 @@ open class SimpleYashaEventListener : IYashaEventListener {
     }
 
     override fun onTaskFinder(fetchResult: FetchResult): List<YashaTask> {
-        return DocumentFinder.findUrl(fetchResult, yashaConfig.blackListRegexList, yashaConfig.filterRegexList)
+        return DocumentFinder.findUrl(fetchResult, yashaConfig.taskFilterList, yashaConfig.taskFilterBlackList)
                 .map { uri -> this.onCreateDefaultGetTask(uri, fetchResult.task.taskDepth + 1, fetchResult.task.taskIdentifier) }
     }
 

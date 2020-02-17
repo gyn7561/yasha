@@ -4,10 +4,13 @@ import cn.gongyinan.yasha.core.Engine
 import cn.gongyinan.yasha.task.db.ITaskDb
 import cn.gongyinan.yasha.task.YashaTask
 import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.asCoroutineDispatcher
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import org.apache.logging.log4j.LogManager
 import java.net.URI
+import java.util.concurrent.Executor
+import java.util.concurrent.Executors
 
 class Yasha(val yashaConfig: YashaConfig) {
 
@@ -41,11 +44,11 @@ class Yasha(val yashaConfig: YashaConfig) {
         }
     }
 
-    fun pushTask(task: YashaTask, force: Boolean = false, pushToStackBottom: Boolean = false): Boolean {
+    fun pushTask(task: YashaTask, force: Boolean = false, pushToStackBottom: Boolean = false): ITaskDb.PushTaskResult {
         return taskDb.pushTask(task, force, pushToStackBottom)
     }
 
-    fun pushGetTask(url: String, force: Boolean = false): Boolean {
+    fun pushGetTask(url: String, force: Boolean = false): ITaskDb.PushTaskResult  {
         val getTask = this.yashaConfig.listener.onCreateDefaultGetTask(URI(url), 0, null)
         return taskDb.pushTask(getTask, force)
     }
@@ -57,6 +60,7 @@ class Yasha(val yashaConfig: YashaConfig) {
     }
 
     private fun startNextTask(engine: Engine, delay: Long = 0) {
+
         GlobalScope.launch {
             delay(delay)
             val yashaTask: YashaTask? = taskDb.getNextTask()
