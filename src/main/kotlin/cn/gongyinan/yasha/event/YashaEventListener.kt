@@ -15,6 +15,7 @@ class YashaEventListener(func: (YashaEventListener.() -> Unit)?) : IYashaEventLi
 
     init {
         func?.invoke(this)
+
     }
 
     class FilterProxy(val filter: ITaskFilter, private val listener: YashaEventListener) {
@@ -65,6 +66,21 @@ class YashaEventListener(func: (YashaEventListener.() -> Unit)?) : IYashaEventLi
 
     fun on(filter: ITaskFilter, func: FilterProxy.() -> Unit) {
         func(FilterProxy(filter, this))
+    }
+
+    /**
+     * 如果要用 一定要写最后面
+     */
+    fun onRest(filter: ITaskFilter, func: FilterProxy.() -> Unit) {
+        on(TaskFilter { true }, func)
+    }
+
+    fun onUrlStartsWith(prefix: String, func: FilterProxy.() -> Unit) {
+        on(TaskFilter { uri.toString().startsWith(prefix) }, func)
+    }
+
+    fun onUrlEndsWith(prefix: String, func: FilterProxy.() -> Unit) {
+        on(TaskFilter { uri.toString().endsWith(prefix) }, func)
     }
 
     fun on(filterFuc: YashaTask.() -> Boolean, func: FilterProxy.() -> Unit) {
