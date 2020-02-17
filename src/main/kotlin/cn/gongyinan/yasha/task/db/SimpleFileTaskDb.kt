@@ -42,7 +42,8 @@ class SimpleFileTaskDb(private val filePath: String) : ITaskDb {
 
     init {
 
-        if ((File(finishedTaskIdJsonPath).exists() || File(unfinishedTaskListJsonPath).exists()) && !File(
+        if ((File(finishedTaskIdJsonPath).exists() || File(unfinishedTaskListJsonPath).exists() ||
+                        File("$finishedTaskIdJsonPath.bk").exists() || File("$unfinishedTaskListJsonPath.bk").exists()) && !File(
                         writeSuccessFilePath
                 ).exists()
         ) {
