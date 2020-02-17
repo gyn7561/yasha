@@ -6,6 +6,9 @@ import cn.gongyinan.yasha.utils.parseQuery
 import com.alibaba.fastjson.JSON
 import com.alibaba.fastjson.JSONArray
 import com.alibaba.fastjson.JSONObject
+import com.google.gson.JsonArray
+import com.google.gson.JsonObject
+import com.google.gson.JsonParser
 import okhttp3.Response
 import org.jsoup.Jsoup
 import org.jsoup.nodes.Document
@@ -27,9 +30,19 @@ class FetchResult(val task: YashaTask, val responseHeaders: List<Pair<String, St
             Jsoup.parse("")
         }
     }
+
+    val gson: JsonObject by lazy {
+        JsonParser().parse(bodyString).asJsonObject
+    }
+
+    val gsonArray: JsonArray by lazy {
+        JsonParser().parse(bodyString).asJsonArray
+    }
+
     val json: JSONObject by lazy {
         JSON.parseObject(bodyString)
     }
+
     val jsonArray: JSONArray by lazy {
         JSON.parseArray(bodyString)
     }
@@ -45,7 +58,6 @@ class FetchResult(val task: YashaTask, val responseHeaders: List<Pair<String, St
     val requestFormDataParams: HashMap<String, String> by lazy {
         String(this.task.requestBody!!).parseFormData()
     }
-
 
 }
 

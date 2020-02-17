@@ -4,7 +4,7 @@ import cn.gongyinan.yasha.FakeResponse
 import cn.gongyinan.yasha.FetchResult
 import cn.gongyinan.yasha.task.YashaTask
 import okhttp3.OkHttpClient
-
+@Deprecated("改用YashaEventListener")
 open class KotlinStyleListener(func: (KotlinStyleListener.() -> Unit)?) : AbstractYashaEventListener() {
 
     class RegexProxy(val regex: Regex, private val listener: KotlinStyleListener) {
@@ -66,6 +66,10 @@ open class KotlinStyleListener(func: (KotlinStyleListener.() -> Unit)?) : Abstra
     fun onRegex(regex: Regex = Regex("[\\w\\W]*"), func: RegexProxy.() -> Unit) {
         func(RegexProxy(regex, this))
     }
+
+//    fun on(cls: (YashaTask.() -> Boolean), func: RegexProxy.() -> Unit) {
+//        func(RegexProxy(Regex(""), this))
+//    }
 
     fun onResponse(regex: Regex = Regex("[\\w\\W]*"), func: IYashaEventListener.(FetchResult) -> Unit) {
         onRegex(regex) {

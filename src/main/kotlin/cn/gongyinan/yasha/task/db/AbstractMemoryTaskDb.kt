@@ -10,7 +10,7 @@ import java.util.*
 import java.util.concurrent.atomic.AtomicInteger
 import kotlin.collections.HashMap
 
-public abstract class AbstractMemoryTaskDb(private val converter: IDbDataConverter) : ITaskDb {
+abstract class AbstractMemoryTaskDb(private val converter: IDbDataConverter) : ITaskDb {
 
     private val logger = LogManager.getLogger(AbstractMemoryTaskDb::class.java)
 
