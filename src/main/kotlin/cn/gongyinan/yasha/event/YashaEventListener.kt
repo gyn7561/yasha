@@ -13,10 +13,20 @@ import okhttp3.OkHttpClient
 
 class YashaEventListener(func: (YashaEventListener.() -> Unit)?) : IYashaEventListener {
 
+    internal val onResponseFuncList = ArrayList<ResponseEventMethod>()
+    internal val onRequestFuncList = ArrayList<RequestEventMethod>()
+    internal val onCreateHttpClientFuncList = ArrayList<CreateHttpClientEventMethod>()
+    internal val onCheckResponseMethodFuncList = ArrayList<CheckResponseMethod>()
+    internal val onCheckCacheMethodFuncList = ArrayList<CheckCacheMethod>()
+    internal val onTaskFinderEventMethodFuncList = ArrayList<TaskFinderEventMethod>()
+    internal val onErrorEventMethodFuncList = ArrayList<ErrorEventMethod>()
+
     init {
         func?.invoke(this)
 
     }
+
+
 
     class FilterContext(val filter: ITaskFilter, private val listener: YashaEventListener) {
 
@@ -98,13 +108,6 @@ class YashaEventListener(func: (YashaEventListener.() -> Unit)?) : IYashaEventLi
     internal data class TaskFinderEventMethod(val filter: ITaskFilter, val func: (FetchResult) -> List<YashaTask>)
     internal data class ErrorEventMethod(val filter: ITaskFilter, val func: (YashaTask, Throwable) -> Unit)
 
-    internal val onResponseFuncList = ArrayList<ResponseEventMethod>()
-    internal val onRequestFuncList = ArrayList<RequestEventMethod>()
-    internal val onCreateHttpClientFuncList = ArrayList<CreateHttpClientEventMethod>()
-    internal val onCheckResponseMethodFuncList = ArrayList<CheckResponseMethod>()
-    internal val onCheckCacheMethodFuncList = ArrayList<CheckCacheMethod>()
-    internal val onTaskFinderEventMethodFuncList = ArrayList<TaskFinderEventMethod>()
-    internal val onErrorEventMethodFuncList = ArrayList<ErrorEventMethod>()
 
     override fun onResponse(fetchResult: FetchResult) {
         for (method in onResponseFuncList) {

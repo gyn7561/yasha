@@ -17,7 +17,6 @@ object MongoDbTest {
 
         val listener = KotlinStyleListener() {
 
-
             onRegex(Regex("https://www.gamersky.com/news/\\d*/\\d*.shtml")) {
                 onRequest { task ->
                     println(task)
