@@ -9,7 +9,8 @@ class YashaDbModal(val taskIdentifier: String, val taskDepth: Int,
                    val requestUrl: String, val requestMethod: String, var requestHeadersData: String? = null, val requestBody: ByteArray? = null, val taskCommand: String,
                    var subTaskCommands: Array<String>? = null, var responseUrl: String? = null, var contentType: String? = null, var responseBody: ByteArray? = null, var responseCode: Int? = null, var responseHeadersData: String? = null,
                    var success: Boolean = false, var ready: Boolean = true, val createTime: Long = System.currentTimeMillis(), var updateTime: Long = System.currentTimeMillis(),
-                   var parentTaskIdentifier: String? = null, var extraData: ByteArray? = null, var taskClass: String = YashaTask::class.java.name) {
+                   var parentTaskIdentifier: String? = null, var extraData: ByteArray? = null, var taskClass: String = YashaTask::class.java.name, var taskBundleId: String? = null,
+                   var nextFetchTime: Long? = null) {
     //响应头的key可能重复
     var responseHeaders: List<Pair<String, String>>?
         get() {

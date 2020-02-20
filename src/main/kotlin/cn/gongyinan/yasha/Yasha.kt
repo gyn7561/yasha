@@ -14,7 +14,10 @@ import java.util.concurrent.Executors
 
 class Yasha(val yashaConfig: YashaConfig) {
 
-    private val taskDb: ITaskDb = yashaConfig.taskDb
+    private val taskDb: ITaskDb by lazy {
+        yashaConfig.taskDb.init()
+        yashaConfig.taskDb
+    }
 
     private val logger = LogManager.getLogger(Yasha::class.java)
 
@@ -48,7 +51,7 @@ class Yasha(val yashaConfig: YashaConfig) {
         return taskDb.pushTask(task, force, pushToStackBottom)
     }
 
-    fun pushGetTask(url: String, force: Boolean = false): ITaskDb.PushTaskResult  {
+    fun pushGetTask(url: String, force: Boolean = false): ITaskDb.PushTaskResult {
         val getTask = this.yashaConfig.listener.onCreateDefaultGetTask(URI(url), 0, null)
         return taskDb.pushTask(getTask, force)
     }
@@ -90,7 +93,7 @@ class Yasha(val yashaConfig: YashaConfig) {
                 success = true
                 updateTime = System.currentTimeMillis()
                 subTaskCommands = result.subTasks.filter { task -> !taskDb.isTaskFinished(task.taskIdentifier) }
-                        .map { yashaTask -> yashaTask.taskCommand }.toTypedArray()
+                        .map { yashaTask -> yashaTask.taskIdentifier }.toTypedArray()
                 responseUrl = result.responseUri.toString()
                 responseHeaders = result.responseHeaders.toList()
                 responseCode = result.responseCode

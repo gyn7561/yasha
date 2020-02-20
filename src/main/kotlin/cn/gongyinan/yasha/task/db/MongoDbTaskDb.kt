@@ -12,21 +12,139 @@ import com.mongodb.client.MongoDatabase
 import com.mongodb.client.model.Filters
 import com.mongodb.client.model.Projections
 import com.mongodb.client.model.UpdateOptions
-import org.bson.BsonDocument
-import org.bson.BsonString
-import org.bson.Document
+import org.apache.logging.log4j.LogManager
+import org.bson.*
 import org.bson.json.JsonMode
 import org.bson.json.JsonWriterSettings
+import org.bson.types.Binary
+import java.util.*
+import kotlin.collections.ArrayList
+import kotlin.collections.HashMap
+import kotlin.collections.HashSet
+import kotlin.collections.MutableList
+import kotlin.collections.forEach
+import kotlin.collections.getValue
+import kotlin.collections.set
+import kotlin.collections.sortBy
 
 
-class MongoDbTaskDb(private val mongoDatabase: MongoDatabase, private val collectionName: String, private val converter: IDbDataConverter = DefaultDbDataConverter()) : AbstractMemoryTaskDb(converter) {
+open class MongoDbTaskDb(private val mongoDatabase: MongoDatabase, private val collectionName: String, private val converter: IDbDataConverter = DefaultDbDataConverter(), val mongoDbObjectConverter: MongoDbObjectConverter = MongoDbObjectConverter()) : AbstractMemoryTaskDb(converter) {
+
+
+    private val logger = LogManager.getLogger(MongoDbTaskDb::class.java)
+
+    interface IMongoDbObjectConverter {
+        fun convertToMongoDbObject(yashaDbModal: YashaDbModal): Document
+        fun convertToYashaDbModal(mongoDbObj: Document): YashaDbModal
+    }
+
+    open class MongoDbObjectConverter() : IMongoDbObjectConverter {
+        override fun convertToMongoDbObject(yashaDbModal: YashaDbModal): Document {
+            val document = Document()
+            document["_id"] = BsonString(yashaDbModal.taskIdentifier)
+
+            if (yashaDbModal.parentTaskIdentifier != null) {
+                document["parentTaskIdentifier"] = BsonString(yashaDbModal.parentTaskIdentifier)
+            }
+
+            document["taskDepth"] = yashaDbModal.taskDepth
+
+            if (yashaDbModal.requestHeadersData != null) {
+                document["requestHeadersData"] = BsonString(yashaDbModal.requestHeadersData)
+            }
+
+            document["requestUrl"] = BsonString(yashaDbModal.requestUrl)
+            document["requestMethod"] = BsonString(yashaDbModal.requestMethod)
+
+            if (yashaDbModal.requestBody != null) {
+                document["requestBody"] = Binary(yashaDbModal.requestBody)
+            }
+
+            if (yashaDbModal.responseBody != null) {
+                document["responseBody"] = Binary(yashaDbModal.responseBody)
+            }
+
+
+            if (yashaDbModal.responseUrl != null) {
+                document["responseUrl"] = BsonString(yashaDbModal.responseUrl)
+            }
+            if (yashaDbModal.responseHeadersData != null) {
+                document["responseHeadersData"] = BsonString(yashaDbModal.responseHeadersData)
+            }
+
+            if (yashaDbModal.responseCode != null) {
+                document["responseCode"] = BsonInt32(yashaDbModal.responseCode!!)
+            }
+
+            if (yashaDbModal.extraData != null) {
+                document["extraData"] = Binary(yashaDbModal.extraData)
+            }
+
+            if (yashaDbModal.subTaskCommands?.any() == true) {
+                document["subTaskCommands"] = BsonArray(yashaDbModal.subTaskCommands!!.map { c -> BsonString(c) })
+            }
+
+            document["taskCommand"] = yashaDbModal.taskCommand
+
+            if (yashaDbModal.contentType != null) {
+                document["contentType"] = BsonString(yashaDbModal.contentType)
+            }
+
+
+            document["updateTime"] = BsonInt64(yashaDbModal.updateTime)
+            document["createTime"] = BsonInt64(yashaDbModal.createTime)
+            document["ready"] = BsonBoolean(yashaDbModal.ready)
+            document["success"] = BsonBoolean(yashaDbModal.success)
+
+            document["taskClass"] = BsonString(yashaDbModal.taskClass)
+
+            if (yashaDbModal.taskBundleId != null) {
+                document["taskBundleId"] = BsonString(yashaDbModal.taskBundleId)
+            }
+
+            if (yashaDbModal.nextFetchTime != null) {
+                document["nextFetchTime"] = BsonInt64(yashaDbModal.nextFetchTime!!)
+            }
+
+
+            return document
+        }
+
+
+        override fun convertToYashaDbModal(mongoDbObj: Document): YashaDbModal {
+            return YashaDbModal(
+                    taskIdentifier = mongoDbObj.getString("_id"),
+                    parentTaskIdentifier = if (mongoDbObj.containsKey("parentTaskIdentifier")) mongoDbObj.getString("parentTaskIdentifier") else null,
+                    taskDepth = mongoDbObj.getInteger("taskDepth"),
+                    requestHeadersData = if (mongoDbObj.containsKey("requestHeadersData")) mongoDbObj.getString("requestHeadersData") else null,
+                    requestUrl = mongoDbObj.getString("requestUrl"),
+                    requestMethod = mongoDbObj.getString("requestMethod"),
+                    requestBody = if (mongoDbObj.containsKey("requestBody")) (mongoDbObj["requestBody"] as Binary).data else null,
+                    responseBody = if (mongoDbObj.containsKey("responseBody")) (mongoDbObj["responseBody"] as Binary).data else null,
+                    responseUrl = if (mongoDbObj.containsKey("responseUrl")) mongoDbObj.getString("responseUrl") else null,
+                    responseHeadersData = if (mongoDbObj.containsKey("responseHeadersData")) mongoDbObj.getString("responseHeadersData") else null,
+                    responseCode = if (mongoDbObj.containsKey("responseCode")) mongoDbObj.getInteger("responseCode") else null,
+                    extraData = if (mongoDbObj.containsKey("extraData")) (mongoDbObj["extraData"] as Binary).data else null,
+                    subTaskCommands = if (mongoDbObj.containsKey("subTaskCommands")) (mongoDbObj["subTaskCommands"] as ArrayList<String>).toTypedArray() else null,
+                    taskCommand = mongoDbObj.getString("taskCommand"),
+                    contentType = if (mongoDbObj.containsKey("contentType")) mongoDbObj.getString("contentType") else null,
+                    updateTime = mongoDbObj.getLong("updateTime"),
+                    createTime = mongoDbObj.getLong("createTime"),
+                    success = mongoDbObj.getBoolean("success"),
+                    ready = mongoDbObj.getBoolean("ready"),
+                    nextFetchTime = if (mongoDbObj.containsKey("nextFetchTime")) mongoDbObj.getLong("nextFetchTime") else null,
+                    taskBundleId = if (mongoDbObj.containsKey("taskBundleId")) mongoDbObj.getString("taskBundleId") else null
+            )
+        }
+    }
+
+    override val finishedTaskCount: Int
+        get() = finishedTaskIdSet.size
 
     open fun upsertDocument(collection: MongoCollection<Document>, yashaDbModal: YashaDbModal) {
         val updateOptions = UpdateOptions()
         updateOptions.upsert(true)
-        val doc = BsonDocument.parse(JSON.toJSONString(yashaDbModal))
-        doc["_id"] = BsonString(yashaDbModal.taskIdentifier)
-        collection.updateOne(Filters.eq("_id", yashaDbModal.taskIdentifier), Document("\$set", doc), updateOptions)
+        collection.updateOne(Filters.eq("_id", yashaDbModal.taskIdentifier), Document("\$set", mongoDbObjectConverter.convertToMongoDbObject(yashaDbModal)), updateOptions)
     }
 
     private val collection = mongoDatabase.getCollection(collectionName)
@@ -67,9 +185,7 @@ class MongoDbTaskDb(private val mongoDatabase: MongoDatabase, private val collec
     //初始化一个ID缓存
     private val finishedTaskIdSet = HashSet<String>()
 
-    var relaxed: JsonWriterSettings = JsonWriterSettings.builder().outputMode(JsonMode.RELAXED).build()
-
-    init {
+    open fun init(collection: MongoCollection<Document>, finishedTaskIdSet: HashSet<String>, unfinishedTaskMap: HashMap<String, YashaDbModal>) {
         var cursor = collection.find(Filters.eq("ready", false)).projection(Projections.fields(Projections.include("_id"))).iterator()
         cursor.forEach { doc ->
             finishedTaskIdSet.add(doc.getString("_id"))
@@ -77,8 +193,7 @@ class MongoDbTaskDb(private val mongoDatabase: MongoDatabase, private val collec
 
         cursor = collection.find(Filters.eq("ready", true)).iterator()
         cursor.forEach { doc ->
-            val obj = Gson().fromJson<YashaDbModal>(doc.toJson(relaxed), YashaDbModal::class.java)
-            unfinishedTaskMap[doc.getString("_id")] = obj
+            unfinishedTaskMap[doc.getString("_id")] = mongoDbObjectConverter.convertToYashaDbModal(doc)
         }
 
         val list = ArrayList(unfinishedTaskMap.values)
@@ -87,6 +202,13 @@ class MongoDbTaskDb(private val mongoDatabase: MongoDatabase, private val collec
         for (yashaDbModal in list) {
             taskStack.push(yashaDbModal)
         }
-
     }
+
+    override fun init() {
+        val start = System.currentTimeMillis()
+        logger.info("开始初始化MONGODB任务库")
+        init(collection, finishedTaskIdSet, unfinishedTaskMap)
+        logger.info("初始化MONGODB任务库完成,耗时${System.currentTimeMillis() - start}ms 已完成:${finishedTaskIdSet.size} 待完成:${unfinishedTaskMap.size}")
+    }
+
 }

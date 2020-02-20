@@ -66,4 +66,8 @@ interface ITaskDb {
             return (-1).toDouble()
         }
 
+    fun init() {
+
+    }
+
 }

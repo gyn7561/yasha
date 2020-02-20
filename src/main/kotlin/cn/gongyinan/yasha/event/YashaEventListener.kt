@@ -8,6 +8,7 @@ import cn.gongyinan.yasha.modals.FetchResult
 import cn.gongyinan.yasha.task.YashaTask
 import cn.gongyinan.yasha.task.filter.ITaskFilter
 import cn.gongyinan.yasha.task.filter.TaskFilter
+import okhttp3.Dispatcher
 import okhttp3.OkHttpClient
 
 
@@ -25,7 +26,6 @@ class YashaEventListener(func: (YashaEventListener.() -> Unit)?) : IYashaEventLi
         func?.invoke(this)
 
     }
-
 
 
     class FilterContext(val filter: ITaskFilter, private val listener: YashaEventListener) {
@@ -81,7 +81,7 @@ class YashaEventListener(func: (YashaEventListener.() -> Unit)?) : IYashaEventLi
     /**
      * 如果要用 一定要写最后面
      */
-    fun onRest(filter: ITaskFilter, func: FilterContext.() -> Unit) {
+    fun onRest(func: FilterContext.() -> Unit) {
         on(TaskFilter { true }, func)
     }
 
@@ -119,6 +119,10 @@ class YashaEventListener(func: (YashaEventListener.() -> Unit)?) : IYashaEventLi
     }
 
     override fun onRequest(yashaTask: YashaTask) {
+        val headers = HashMap(yashaTask.headers ?: mapOf())
+        headers.putAll(yashaConfig.defaultHeaders)
+        yashaTask.headers = headers
+
         for (method in onRequestFuncList) {
             if (method.filter.filter(yashaTask)) {
                 method.func(yashaTask)
@@ -127,7 +131,16 @@ class YashaEventListener(func: (YashaEventListener.() -> Unit)?) : IYashaEventLi
         }
     }
 
-    private val defaultOkHttpClient = OkHttpClient().newBuilder().build()
+    val defaultDispatcher by lazy {
+        val dispatcher = Dispatcher()
+        dispatcher.maxRequests = yashaConfig.threadNum
+        dispatcher.maxRequestsPerHost = yashaConfig.threadNum
+        dispatcher
+    }
+
+    private val defaultOkHttpClient by lazy {
+        OkHttpClient().newBuilder().dispatcher(defaultDispatcher).build()
+    }
 
     override fun onCreateHttpClient(yashaTask: YashaTask): OkHttpClient {
         for (method in onCreateHttpClientFuncList) {
@@ -162,6 +175,10 @@ class YashaEventListener(func: (YashaEventListener.() -> Unit)?) : IYashaEventLi
                 return method.func(fetchResult)
             }
         }
+        return defaultTaskFinder(fetchResult)
+    }
+
+    open fun defaultTaskFinder(fetchResult: FetchResult): List<YashaTask> {
         return DocumentFinder.findUrl(fetchResult, yashaConfig.taskFilterList, yashaConfig.taskFilterBlackList)
                 .map { uri -> this.onCreateDefaultGetTask(uri, fetchResult.task.taskDepth + 1, fetchResult.task.taskIdentifier) }
     }

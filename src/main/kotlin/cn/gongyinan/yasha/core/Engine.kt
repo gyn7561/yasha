@@ -8,6 +8,9 @@ import cn.gongyinan.yasha.task.YashaTask
 import cn.gongyinan.yasha.utils.BrUtil
 import cn.gongyinan.yasha.utils.EncodingDetect
 import cn.gongyinan.yasha.utils.GZipUtil
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import okhttp3.*
 import okhttp3.RequestBody.Companion.toRequestBody
 import org.apache.commons.compress.compressors.brotli.BrotliCompressorInputStream
@@ -118,7 +121,10 @@ open class Engine(private val yashaConfig: YashaConfig, private val name: String
             } else {
                 if (retryCount + 1 <= yashaConfig.retryCount) {
                     logger.error("$this 检查 $task 不合法 正在重试 ")
-                    fetchPage(task, onSuccess, onFailure, onFinal, retryCount + 1)
+                    GlobalScope.launch {
+                        delay(yashaConfig.intervalInMs)
+                        fetchPage(task, onSuccess, onFailure, onFinal, retryCount + 1)
+                    }
                 } else {
                     logger.error("$this 检查 $task 不合法 ${fetchResult.bodyString}")
                     onFailure(task, RuntimeException("检查 $task 不合法"))
@@ -149,7 +155,10 @@ open class Engine(private val yashaConfig: YashaConfig, private val name: String
             override fun onFailure(call: Call, e: IOException) {
                 if (retryCount + 1 <= yashaConfig.retryCount) {
                     logger.error("$this 运行 $task 出错 正在重试 ${e.message}")
-                    fetchPage(task, onSuccess, onFailure, onFinal, retryCount + 1)
+                    GlobalScope.launch {
+                        delay(yashaConfig.intervalInMs)
+                        fetchPage(task, onSuccess, onFailure, onFinal, retryCount + 1)
+                    }
                 } else {
                     logger.error("$this 运行 $task 出错 ${e.message}")
                     onFailure(task, e)

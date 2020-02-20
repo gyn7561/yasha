@@ -17,6 +17,9 @@ abstract class AbstractMemoryTaskDb(private val converter: IDbDataConverter) : I
     open val unfinishedTaskMap = HashMap<String, YashaDbModal>()
     open val taskStack = Stack<YashaDbModal>()
 
+    override val unfinishedTaskCount: Int
+        get() = unfinishedTaskMap.size
+
     override lateinit var yasha: Yasha
 
     private val speedRecorder = SpeedRecorder()
