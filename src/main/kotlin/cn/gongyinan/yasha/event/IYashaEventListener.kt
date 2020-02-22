@@ -28,6 +28,18 @@ interface IYashaEventListener {
 
     fun onError(yashaTask: YashaTask, e: Throwable)
 
+    fun beforeTaskFinder(fetchResult: FetchResult) {
+
+    }
+
+    fun beforePushTask(yashaTask: YashaTask): YashaTask {
+        return yashaTask
+    }
+
+    fun afterTaskFinder(fetchResult: FetchResult, tasks: List<YashaTask>): List<YashaTask> {
+        return tasks
+    }
+
     fun onCreateDefaultGetTask(uri: URI, depth: Int, parentTaskIdentifier: String?): YashaTask {
         return YashaGetTask(
                 uri, depth,

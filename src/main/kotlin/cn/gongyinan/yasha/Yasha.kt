@@ -56,6 +56,7 @@ class Yasha(val yashaConfig: YashaConfig) {
         return taskDb.pushTask(getTask, force)
     }
 
+
     init {
         for (url in yashaConfig.initUrl) {
             pushGetTask(url)
@@ -84,6 +85,9 @@ class Yasha(val yashaConfig: YashaConfig) {
 
     private fun startTask(engine: Engine, task: YashaTask) {
         engine.fetchPage(task, onSuccess = { result ->
+            result.subTasks = result.subTasks.map { subTask ->
+                yashaConfig.listener.beforePushTask(subTask)
+            }
             for (subTask in result.subTasks) {
                 pushTask(subTask)
             }
@@ -92,8 +96,7 @@ class Yasha(val yashaConfig: YashaConfig) {
                 ready = false
                 success = true
                 updateTime = System.currentTimeMillis()
-                subTaskCommands = result.subTasks.filter { task -> !taskDb.isTaskFinished(task.taskIdentifier) }
-                        .map { yashaTask -> yashaTask.taskIdentifier }.toTypedArray()
+                subTaskCommands = result.subTasks.map { yashaTask -> yashaTask.taskIdentifier }.toTypedArray()
                 responseUrl = result.responseUri.toString()
                 responseHeaders = result.responseHeaders.toList()
                 responseCode = result.responseCode
@@ -103,7 +106,7 @@ class Yasha(val yashaConfig: YashaConfig) {
         }, onFailure = { _, e ->
             taskDb.updateTask(task) {
                 success = false
-                ready = false
+                ready = true // 下次再来
                 updateTime = System.currentTimeMillis()
             }
             yashaConfig.listener.onError(task, e)

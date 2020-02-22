@@ -17,7 +17,7 @@ class YashaConfig(
 //        val blackListRegexList: Array<Regex> = arrayOf(),
         val taskFilterList: Array<ITaskFilter> = arrayOf(),
         val taskFilterBlackList: Array<ITaskFilter> = arrayOf(),
-        val maxDepth: Int = 1000,
+        val maxDepth: Int = 100000000,
         val retryCount: Int = 5,
         val taskDb: ITaskDb = SimpleMemoryTaskDb(),
         val defaultUserAgent: String = "Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/78.0.3904.108 Safari/537.36",

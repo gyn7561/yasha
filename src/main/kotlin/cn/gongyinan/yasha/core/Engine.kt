@@ -82,7 +82,7 @@ open class Engine(private val yashaConfig: YashaConfig, private val name: String
                 contentType.startsWith("application/json") -> {
                     ResponseType.Json
                 }
-                contentType.startsWith("text/xml") -> {
+                contentType.startsWith("text/xml") || contentType.startsWith("application/xml") -> {
                     ResponseType.XML
                 }
                 contentType.startsWith("application/x-javascript") -> {
@@ -115,18 +115,20 @@ open class Engine(private val yashaConfig: YashaConfig, private val name: String
             )
             val valid = yashaConfig.listener.onCheckResponse(fetchResult)
             if (valid) {
-                fetchResult.subTasks = yashaConfig.listener.onTaskFinder(fetchResult)
+                yashaConfig.listener.beforeTaskFinder(fetchResult)
+                val subTasks = yashaConfig.listener.onTaskFinder(fetchResult)
+                fetchResult.subTasks = yashaConfig.listener.afterTaskFinder(fetchResult, subTasks)
                 onSuccess(fetchResult)
                 innerOnFinal(okHttpResponse)
             } else {
                 if (retryCount + 1 <= yashaConfig.retryCount) {
-                    logger.error("$this 检查 $task 不合法 正在重试 ")
+                    logger.error("$this 检查 $task 不合法 正在重试 ${fetchResult.responseCode} ${fetchResult.responseUri} ${fetchResult.task}")
                     GlobalScope.launch {
                         delay(yashaConfig.intervalInMs)
                         fetchPage(task, onSuccess, onFailure, onFinal, retryCount + 1)
                     }
                 } else {
-                    logger.error("$this 检查 $task 不合法 ${fetchResult.bodyString}")
+                    logger.error("$this 检查 $task 不合法 ${fetchResult.responseCode} ${fetchResult.responseUri} ${fetchResult.task} ${fetchResult.bodyString}")
                     onFailure(task, RuntimeException("检查 $task 不合法"))
                     innerOnFinal(okHttpResponse)
                 }

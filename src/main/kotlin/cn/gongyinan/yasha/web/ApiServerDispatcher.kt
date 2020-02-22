@@ -38,7 +38,6 @@ class ApiServerDispatcher(yasha: Yasha, port: Int, private val name: String = "y
         jsonResponse(mapOf("speed" to yasha.yashaConfig.taskDb.lastOneMinSpeed))
     }
 
-
     private val totalSpeed: (RecordedRequest) -> MockResponse = {
         jsonResponse(mapOf("speed" to yasha.yashaConfig.taskDb.totalSpeed))
     }

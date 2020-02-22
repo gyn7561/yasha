@@ -6,13 +6,15 @@ import cn.gongyinan.yasha.finder.DocumentFinder
 import cn.gongyinan.yasha.modals.FakeResponse
 import cn.gongyinan.yasha.modals.FetchResult
 import cn.gongyinan.yasha.task.YashaTask
+import cn.gongyinan.yasha.task.filter.CompositeTaskFilter
+import cn.gongyinan.yasha.task.filter.EmptyTaskFilter
 import cn.gongyinan.yasha.task.filter.ITaskFilter
 import cn.gongyinan.yasha.task.filter.TaskFilter
 import okhttp3.Dispatcher
 import okhttp3.OkHttpClient
 
 
-class YashaEventListener(func: (YashaEventListener.() -> Unit)?) : IYashaEventListener {
+open class YashaEventListener(func: (YashaEventListener.() -> Unit)?) : FilterContext(EmptyTaskFilter()), IYashaEventListener {
 
     internal val onResponseFuncList = ArrayList<ResponseEventMethod>()
     internal val onRequestFuncList = ArrayList<RequestEventMethod>()
@@ -20,81 +22,13 @@ class YashaEventListener(func: (YashaEventListener.() -> Unit)?) : IYashaEventLi
     internal val onCheckResponseMethodFuncList = ArrayList<CheckResponseMethod>()
     internal val onCheckCacheMethodFuncList = ArrayList<CheckCacheMethod>()
     internal val onTaskFinderEventMethodFuncList = ArrayList<TaskFinderEventMethod>()
+    internal val beforeTaskFinderEventMethodFuncList = ArrayList<BeforeTaskFinderEventMethod>()
+    internal val afterTaskFinderEventMethodFuncList = ArrayList<AfterTaskFinderEventMethod>()
     internal val onErrorEventMethodFuncList = ArrayList<ErrorEventMethod>()
 
     init {
+        listener(this)
         func?.invoke(this)
-
-    }
-
-
-    class FilterContext(val filter: ITaskFilter, private val listener: YashaEventListener) {
-
-        fun onResponse(func: FetchResult.(FetchResult) -> Unit) {
-            listener.onResponseFuncList.add(ResponseEventMethod(filter) { fetchResult ->
-                func.invoke(fetchResult, fetchResult)
-            })
-        }
-
-        fun onCheckCache(func: YashaTask.(YashaTask) -> FakeResponse?) {
-            listener.onCheckCacheMethodFuncList.add(CheckCacheMethod(filter) { task ->
-                func(task, task)
-            })
-        }
-
-        fun onRequest(func: YashaTask.(YashaTask) -> Unit) {
-            listener.onRequestFuncList.add(RequestEventMethod(filter) { task ->
-                func(task, task)
-            })
-        }
-
-        fun onCheckResponse(func: FetchResult.(FetchResult) -> Boolean) {
-            listener.onCheckResponseMethodFuncList.add(CheckResponseMethod(filter) { fetchResult ->
-                func(fetchResult, fetchResult)
-            })
-        }
-
-        fun onCreateHttpClient(func: YashaTask.(YashaTask) -> OkHttpClient) {
-            listener.onCreateHttpClientFuncList.add(CreateHttpClientEventMethod(filter) { yashaTask ->
-                func(yashaTask, yashaTask)
-            })
-        }
-
-        fun onTaskFinder(func: FetchResult.(FetchResult) -> List<YashaTask>) {
-            listener.onTaskFinderEventMethodFuncList.add(TaskFinderEventMethod(filter) { yashaTask ->
-                func(yashaTask, yashaTask)
-            })
-        }
-
-        fun onError(func: YashaTask.(YashaTask, Throwable) -> Unit) {
-            listener.onErrorEventMethodFuncList.add(ErrorEventMethod(filter) { yashaTask, e ->
-                func(yashaTask, yashaTask, e)
-            })
-        }
-
-    }
-
-    fun on(filter: ITaskFilter, func: FilterContext.() -> Unit) {
-        func(FilterContext(filter, this))
-    }
-
-    /**
-     * 如果要用 一定要写最后面
-     */
-    fun onRest(func: FilterContext.() -> Unit) {
-        on(TaskFilter { true }, func)
-    }
-
-    fun onUrlStartsWith(prefix: String, func: FilterContext.() -> Unit) {
-        on(TaskFilter { uri.toString().startsWith(prefix) }, func)
-    }
-
-    fun onUrlEndsWith(prefix: String, func: FilterContext.() -> Unit) {
-        on(TaskFilter { uri.toString().endsWith(prefix) }, func)
-    }
-
-    fun on(filterFuc: YashaTask.() -> Boolean, func: FilterContext.() -> Unit) {
-        on(TaskFilter(filterFuc), func)
     }
 
     override lateinit var yashaConfig: YashaConfig
@@ -106,8 +40,9 @@ class YashaEventListener(func: (YashaEventListener.() -> Unit)?) : IYashaEventLi
     internal data class CheckResponseMethod(val filter: ITaskFilter, val func: (FetchResult) -> Boolean)
     internal data class CreateHttpClientEventMethod(val filter: ITaskFilter, val func: (YashaTask) -> OkHttpClient)
     internal data class TaskFinderEventMethod(val filter: ITaskFilter, val func: (FetchResult) -> List<YashaTask>)
+    internal data class BeforeTaskFinderEventMethod(val filter: ITaskFilter, val func: (FetchResult) -> Unit)
+    internal data class AfterTaskFinderEventMethod(val filter: ITaskFilter, val func: (FetchResult, List<YashaTask>) -> List<YashaTask>)
     internal data class ErrorEventMethod(val filter: ITaskFilter, val func: (YashaTask, Throwable) -> Unit)
-
 
     override fun onResponse(fetchResult: FetchResult) {
         for (method in onResponseFuncList) {
@@ -176,6 +111,24 @@ class YashaEventListener(func: (YashaEventListener.() -> Unit)?) : IYashaEventLi
             }
         }
         return defaultTaskFinder(fetchResult)
+    }
+
+    override fun afterTaskFinder(fetchResult: FetchResult, tasks: List<YashaTask>): List<YashaTask> {
+        for (method in afterTaskFinderEventMethodFuncList) {
+            if (method.filter.filter(fetchResult.task)) {
+                return method.func(fetchResult, tasks)
+            }
+        }
+        return tasks
+    }
+
+    override fun beforeTaskFinder(fetchResult: FetchResult) {
+        for (method in beforeTaskFinderEventMethodFuncList) {
+            if (method.filter.filter(fetchResult.task)) {
+                method.func(fetchResult)
+                return
+            }
+        }
     }
 
     open fun defaultTaskFinder(fetchResult: FetchResult): List<YashaTask> {
