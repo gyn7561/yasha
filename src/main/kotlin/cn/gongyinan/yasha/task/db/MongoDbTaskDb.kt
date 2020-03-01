@@ -186,15 +186,29 @@ open class MongoDbTaskDb(private val mongoDatabase: MongoDatabase, private val c
     private val finishedTaskIdSet = HashSet<String>()
 
     open fun init(collection: MongoCollection<Document>, finishedTaskIdSet: HashSet<String>, unfinishedTaskMap: HashMap<String, YashaDbModal>) {
+
+        logger.info("开始初始化MONGODB已完成任务库")
+        var start = System.currentTimeMillis()
         var cursor = collection.find(Filters.eq("ready", false)).projection(Projections.fields(Projections.include("_id"))).iterator()
+
         cursor.forEach { doc ->
             finishedTaskIdSet.add(doc.getString("_id"))
         }
+
+        cursor.close()
+        logger.info("初始化MONGODB已完成任务库完成,耗时${System.currentTimeMillis() - start}ms 已完成:${finishedTaskIdSet.size}")
+
+        logger.info("开始初始化MONGODB未完成任务库")
+        start = System.currentTimeMillis()
 
         cursor = collection.find(Filters.eq("ready", true)).iterator()
         cursor.forEach { doc ->
             unfinishedTaskMap[doc.getString("_id")] = mongoDbObjectConverter.convertToYashaDbModal(doc)
         }
+        cursor.close()
+
+        logger.info("初始化MONGODB未完成任务库完成,耗时${System.currentTimeMillis() - start}ms 未完成:${finishedTaskIdSet.size}")
+
 
         val list = ArrayList(unfinishedTaskMap.values)
         list.sortBy { d -> d.createTime }
@@ -209,6 +223,14 @@ open class MongoDbTaskDb(private val mongoDatabase: MongoDatabase, private val c
         logger.info("开始初始化MONGODB任务库")
         init(collection, finishedTaskIdSet, unfinishedTaskMap)
         logger.info("初始化MONGODB任务库完成,耗时${System.currentTimeMillis() - start}ms 已完成:${finishedTaskIdSet.size} 待完成:${unfinishedTaskMap.size}")
+    }
+
+    fun getById(id:String): YashaDbModal? {
+        var yashaDbModal : YashaDbModal? = null
+        collection.find(Filters.eq("_id", id)).limit(1).iterator().forEach { doc->
+            yashaDbModal = mongoDbObjectConverter.convertToYashaDbModal(doc)
+        }
+        return yashaDbModal
     }
 
 }
